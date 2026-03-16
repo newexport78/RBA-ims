@@ -3,7 +3,6 @@ import secrets
 from datetime import timedelta
 
 from django.conf import settings
-from django.core.mail import send_mail
 from django.utils import timezone
 
 from .models import OTP, User
@@ -21,6 +20,29 @@ def create_otp_for_user(user: User) -> OTP:
     return otp
 
 
+def _send_email_via_sendgrid(subject: str, message: str, to_email: str) -> None:
+    """Send an email using SendGrid HTTP API."""
+    from sendgrid import SendGridAPIClient
+    from sendgrid.helpers.mail import Mail
+
+    api_key = getattr(settings, 'SENDGRID_API_KEY', None)
+    if not api_key:
+        # Fail loudly in production so misconfiguration is obvious.
+        raise RuntimeError('SENDGRID_API_KEY is not configured')
+
+    email = Mail(
+        from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@ims.local'),
+        to_emails=to_email,
+        subject=subject,
+        plain_text_content=message,
+    )
+    client = SendGridAPIClient(api_key)
+    # Raise for any non-2xx response
+    response = client.send(email)
+    if response.status_code >= 400:
+        raise RuntimeError(f'SendGrid error {response.status_code}: {response.body}')
+
+
 def send_otp_email(user: User, code: str) -> None:
     """Send OTP code to user's email."""
     subject = 'Your login code'
@@ -30,13 +52,7 @@ def send_otp_email(user: User, code: str) -> None:
         f'It expires in {expiry_minutes} minutes. '
         'Do not share this code.'
     )
-    send_mail(
-        subject,
-        message,
-        getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@ims.local'),
-        [user.email],
-        fail_silently=False,
-    )
+    _send_email_via_sendgrid(subject, message, user.email)
 
 
 def verify_otp(user: User, code: str) -> bool:

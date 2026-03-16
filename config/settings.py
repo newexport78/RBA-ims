@@ -11,11 +11,8 @@ env = environ.Env(
     SECRET_KEY=(str, 'dev-secret-key-change-in-production'),
     ALLOWED_HOSTS=(list, ['localhost', '127.0.0.1']),
     DATABASE_URL=(str, ''),
-    EMAIL_HOST=(str, ''),
-    EMAIL_PORT=(int, 587),
-    EMAIL_USE_TLS=(bool, True),
-    EMAIL_HOST_USER=(str, ''),
-    EMAIL_HOST_PASSWORD=(str, ''),
+    SENDGRID_API_KEY=(str, ''),
+    DEFAULT_FROM_EMAIL=(str, 'noreply@ims.local'),
     OTP_EXPIRY_MINUTES=(int, 10),
     SESSION_COOKIE_AGE=(int, 3600),
     SESSION_SAVE_EVERY_REQUEST=(bool, True),
@@ -122,18 +119,10 @@ SESSION_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_SECURE = not DEBUG
 
-# Email (OTP)
+# Email (OTP) via SendGrid HTTP API
 OTP_EXPIRY_MINUTES = env('OTP_EXPIRY_MINUTES')
-if env('EMAIL_HOST'):
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST = env('EMAIL_HOST')
-    EMAIL_PORT = env('EMAIL_PORT')
-    EMAIL_USE_TLS = env('EMAIL_USE_TLS')
-    EMAIL_HOST_USER = env('EMAIL_HOST_USER')
-    EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
-    DEFAULT_FROM_EMAIL = EMAIL_HOST_USER or 'noreply@ims.local'
-else:
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+SENDGRID_API_KEY = env('SENDGRID_API_KEY')
+DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL')
 
 # Error logging (Phase 6): log to console; optionally to file if logs/ exists
 _log_dir = BASE_DIR / 'logs'
