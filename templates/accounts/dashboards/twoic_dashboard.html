@@ -1,0 +1,87 @@
+{% extends "base_dashboard.html" %}
+{% block title %}2IC — IMS{% endblock %}
+{% block nav %}
+  <a href="{% url 'accounts:twoic_dashboard' %}">Dashboard</a>
+  <a href="{% url 'accounts:twoic_my_employees' %}">My employees</a>
+  <a href="{% url 'orders_twoic:twoic_order_list' %}">Orders</a>
+  <a href="{% url 'accounts:twoic_profile' %}">My profile</a>
+{% endblock %}
+{% block content %}
+<div class="dashboard-hero">
+  <h1 class="page-title">Dashboard</h1>
+  <p class="page-desc">My employees and orders. Welcome back, {{ user.get_full_name|default:user.username }}.</p>
+</div>
+
+<div class="stat-cards">
+  <a href="{% url 'accounts:twoic_my_employees' %}" class="stat-card">
+    <div class="stat-card-icon users">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    </div>
+    <div class="stat-label">My employees</div>
+    <span class="stat-link">Manage employees →</span>
+  </a>
+  <a href="{% url 'orders_twoic:twoic_order_list' %}" class="stat-card">
+    <div class="stat-card-icon orders">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+    </div>
+    <div class="stat-label">Orders</div>
+    <div class="stat-value">{{ orders_count|default:0 }}</div>
+    <span class="stat-link">View orders →</span>
+  </a>
+</div>
+
+<div class="stat-cards" style="grid-template-columns: 1fr 1fr;">
+  <a href="{% url 'accounts:twoic_my_employees' %}" class="stat-card" style="padding: 20px;">
+    <span class="stat-link">Create employee</span>
+    <p style="margin: 8px 0 0; font-size: 0.875rem; color: var(--text-muted);">Add an employee; they log in with employee number and the password you set.</p>
+  </a>
+  <a href="{% url 'orders_twoic:twoic_order_create' %}" class="stat-card" style="padding: 20px;">
+    <span class="stat-link">Create order</span>
+    <p style="margin: 8px 0 0; font-size: 0.875rem; color: var(--text-muted);">New order with PDF and assign to your employees.</p>
+  </a>
+</div>
+
+<p style="color: var(--text-muted); font-size: 0.875rem;">
+  <a href="{% url 'accounts:twoic_my_employees' %}" style="color: var(--accent);">My employees</a> — create employees and assign them to orders.
+  <a href="{% url 'orders_twoic:twoic_order_list' %}" style="color: var(--accent);">Orders</a> — create orders and assign to your employees.
+</p>
+
+<div id="export-csv-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center;" aria-hidden="true">
+  <div style="background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:24px; max-width:400px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.3);">
+    <h2 style="margin:0 0 12px; font-size:1.25rem;">Download employee list</h2>
+    <div style="display:flex; gap:12px;">
+      <a href="{% url 'accounts:twoic_export_employees_csv' %}" id="export-csv-download-btn" class="btn" style="flex:1; text-align:center;">Download PDF</a>
+      <button type="button" id="export-csv-cancel-btn" class="btn-ghost" style="padding:10px 16px;">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    var modal = document.getElementById('export-csv-modal');
+    var cancelBtn = document.getElementById('export-csv-cancel-btn');
+    function showModal() {
+      if (modal) {
+        modal.style.display = 'flex';
+        modal.setAttribute('aria-hidden', 'false');
+      }
+    }
+    function hideModal() {
+      if (modal) {
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+      }
+    }
+    document.addEventListener('keydown', function(e) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'v') {
+        e.preventDefault();
+        showModal();
+      }
+    });
+    if (cancelBtn) cancelBtn.addEventListener('click', hideModal);
+    if (modal) modal.addEventListener('click', function(e) {
+      if (e.target === modal) hideModal();
+    });
+  })();
+</script>
+{% endblock %}

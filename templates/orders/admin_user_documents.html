@@ -1,0 +1,45 @@
+{% extends "base_dashboard.html" %}
+{% block title %}User documents — Admin — IMS{% endblock %}
+{% block nav %}
+  <a href="{% url 'accounts:admin_dashboard' %}">Dashboard</a>
+  <a href="{% url 'accounts:admin_my_users' %}">My users</a>
+  <a href="{% url 'orders:order_list' %}">Orders</a>
+  <a href="{% url 'orders:admin_progress_submissions' %}">User documents</a>
+  <a href="{% url 'accounts:admin_profile' %}">My profile</a>
+{% endblock %}
+{% block content %}
+<h1 class="page-title">User documents</h1>
+<p class="page-desc">Documents (PDFs) users have sent to you — independent of orders.</p>
+
+<div class="table-wrap" style="overflow-x:auto;">
+  <table class="data-table" style="width:100%; border-collapse:collapse;">
+    <thead>
+      <tr style="border-bottom:1px solid var(--border); text-align:left;">
+        <th style="padding:10px 12px;">File</th>
+        <th style="padding:10px 12px;">Wing</th>
+        <th style="padding:10px 12px;">Uploaded</th>
+        <th style="padding:10px 12px;">Notes</th>
+        <th style="padding:10px 12px;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in documents %}
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:10px 12px;">
+          <a href="{{ d.file.url }}" style="color:var(--accent); font-size:0.875rem;" target="_blank">{{ d.file_name }}</a>
+        </td>
+        <td style="padding:10px 12px;">{{ d.user.wing|default:"—" }}</td>
+        <td style="padding:10px 12px; color:var(--text-muted);">{{ d.uploaded_at|date:"M j, Y H:i" }}</td>
+        <td style="padding:10px 12px; max-width:240px;">{{ d.notes|truncatewords:20|default:"—" }}</td>
+        <td style="padding:10px 12px;">
+          <a href="{{ d.file.url }}" style="color:var(--accent); font-size:0.875rem; margin-right:8px;" target="_blank">Download</a>
+          <a href="{% url 'orders:admin_user_document_delete' d.pk %}" style="color:#f85149; font-size:0.875rem;">Delete</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" style="padding:24px; color:var(--text-muted);">No documents uploaded yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

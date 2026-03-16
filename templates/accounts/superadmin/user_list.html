@@ -1,0 +1,91 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Users — Superadmin — IMS{% endblock %}
+{% block nav %}
+  <a href="{% url 'accounts:superadmin_dashboard' %}">Dashboard</a>
+  <a href="{% url 'accounts:superadmin_user_list' %}">Users</a>
+  <a href="{% url 'accounts:superadmin_device_list' %}">Devices</a>
+  <a href="{% url 'accounts:superadmin_audit_log' %}">Audit log</a>
+  <a href="{% url 'accounts:superadmin_settings' %}">Settings</a>
+  <a href="{% url 'accounts:superadmin_profile' %}">My profile</a>
+{% endblock %}
+{% block content %}
+<h1 class="page-title">Users</h1>
+<p class="page-desc">All admins and users. Create accounts, delete users, or reset password.</p>
+
+<div class="toolbar" style="display:flex; flex-wrap:wrap; gap:12px; margin-bottom:20px; align-items:center;">
+  <a href="{% url 'accounts:superadmin_user_create' %}" class="btn btn-primary" style="width:auto;">Add user / Add admin</a>
+  <form method="get" action="{% url 'accounts:superadmin_user_list' %}" style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+    <input type="text" name="q" value="{{ search }}" placeholder="Search name, username, email" style="width:220px; padding:8px 12px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text);">
+    <select name="role" style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text);">
+      <option value="">All roles</option>
+      {% for value, label in role_choices %}
+      <option value="{{ value }}" {% if role_filter == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <select name="status" style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text);">
+      <option value="">All statuses</option>
+      <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+      <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+    </select>
+    <button type="submit" class="btn btn-ghost" style="margin:0;">Filter</button>
+  </form>
+</div>
+
+<div class="table-wrap" style="overflow-x:auto;">
+  <table class="data-table" style="width:100%; border-collapse:collapse;">
+    <thead>
+      <tr style="border-bottom:1px solid var(--border); text-align:left;">
+        <th style="padding:10px 12px;">Wing</th>
+        <th style="padding:10px 12px;">Name</th>
+        <th style="padding:10px 12px;">Username</th>
+        <th style="padding:10px 12px;">Email</th>
+        <th style="padding:10px 12px;">Role</th>
+        <th style="padding:10px 12px;">Status</th>
+        <th style="padding:10px 12px;">Approval</th>
+        <th style="padding:10px 12px;">Last login</th>
+        <th style="padding:10px 12px;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in user_list %}
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:10px 12px;">{{ u.wing|default:"—" }}</td>
+        <td style="padding:10px 12px;">{{ u.get_full_name|default:"—" }}</td>
+        <td style="padding:10px 12px;">{{ u.username }}</td>
+        <td style="padding:10px 12px;">{{ u.email }}</td>
+        <td style="padding:10px 12px;">{{ u.get_role_display }}</td>
+        <td style="padding:10px 12px;">
+          <span class="badge {% if u.is_active %}badge-success{% else %}badge-muted{% endif %}">
+            {% if u.is_active %}Active{% else %}Inactive{% endif %}
+          </span>
+        </td>
+        <td style="padding:10px 12px;">
+          {% if u.role == 'superadmin' %}
+            <span class="badge badge-success">—</span>
+          {% elif u.is_approved %}
+            <span class="badge badge-success">Approved</span>
+          {% else %}
+            <span class="badge badge-muted">Pending</span>
+          {% endif %}
+        </td>
+        <td style="padding:10px 12px; color:var(--text-muted);">
+          {% if u.last_login %}{{ u.last_login|date:"M j, Y H:i" }}{% else %}Never{% endif %}
+        </td>
+        <td style="padding:10px 12px;">
+          {% if u.pk != request.user.pk %}
+          {% if not u.is_approved and u.role != 'superadmin' %}
+          <a href="{% url 'accounts:superadmin_user_approve' u.pk %}" class="btn btn-ghost" style="padding:4px 8px; font-size:0.875rem; color:#3fb950;">Approve</a>
+          {% endif %}
+          <a href="{% url 'accounts:superadmin_user_reset_password' u.pk %}" class="btn btn-ghost" style="padding:4px 8px; font-size:0.875rem;">Reset password</a>
+          <a href="{% url 'accounts:superadmin_user_delete' u.pk %}" class="btn btn-ghost" style="padding:4px 8px; font-size:0.875rem; color:#f85149;">Delete</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="9" style="padding:24px; color:var(--text-muted);">No users match the filters.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "includes/pagination.html" with query_string=query_string %}
+{% endblock %}

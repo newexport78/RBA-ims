@@ -1,0 +1,33 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Create user — Admin — IMS{% endblock %}
+{% block nav %}
+  <a href="{% url 'accounts:admin_dashboard' %}">Dashboard</a>
+  <a href="{% url 'accounts:admin_my_users' %}">My users</a>
+  <a href="{% url 'orders:order_list' %}">Orders</a>
+  <a href="{% url 'orders:admin_progress_submissions' %}">User documents</a>
+  <a href="{% url 'accounts:admin_profile' %}">My profile</a>
+{% endblock %}
+{% block content %}
+<h1 class="page-title">Create user</h1>
+<p class="page-desc">Add a user to your team. They will use this username and password to log in; OTP is sent to their email.</p>
+
+<div class="card" style="max-width: 420px; padding: 24px; border: 1px solid var(--border); border-radius: 12px;">
+  <form method="post" action="{% url 'accounts:admin_user_create' %}">
+    {% csrf_token %}
+    <label for="username">Username *</label>
+    <input type="text" id="username" name="username" value="{{ username|default:'' }}" required style="width:100%; padding:10px 12px; margin-bottom:16px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text);">
+    <label for="email">Email *</label>
+    <input type="email" id="email" name="email" value="{{ email|default:'' }}" required style="width:100%; padding:10px 12px; margin-bottom:16px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text);">
+    <label for="password">Initial password *</label>
+    <input type="password" id="password" name="password" required minlength="8" style="width:100%; padding:10px 12px; margin-bottom:16px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text);" placeholder="At least 8 characters">
+    <label for="first_name">First name</label>
+    <input type="text" id="first_name" name="first_name" value="{{ first_name|default:'' }}" style="width:100%; padding:10px 12px; margin-bottom:16px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text);">
+    <label for="last_name">Last name</label>
+    <input type="text" id="last_name" name="last_name" value="{{ last_name|default:'' }}" style="width:100%; padding:10px 12px; margin-bottom:16px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text);">
+    <label for="wing">Wing</label>
+    <input type="text" id="wing" name="wing" value="{{ wing|default:'' }}" placeholder="e.g. North, Finance" style="width:100%; padding:10px 12px; margin-bottom:20px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text);">
+    <button type="submit" class="btn" style="width:100%;">Create user</button>
+  </form>
+  <p style="margin-top:16px;"><a href="{% url 'accounts:admin_my_users' %}" class="btn-ghost" style="padding:0;">← Back to my users</a></p>
+</div>
+{% endblock %}

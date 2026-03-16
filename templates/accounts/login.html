@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Log in — IMS{% endblock %}
+{% block extra_css %}
+<style>
+  .login-page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background-color: #7b9acc;
+    background-image: url("{% static 'images/RBAC.png' %}");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    position: relative;
+  }
+  .login-page::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.25);
+    z-index: 0;
+  }
+  .login-logo {
+    position: relative;
+    z-index: 1;
+    margin-bottom: 8px;
+    display: block;
+    max-height: 70px;
+    width: auto;
+    object-fit: contain;
+  }
+  .login-glass {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 380px;
+    padding: 36px 32px 32px;
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  }
+  .login-glass h1 {
+    text-align: center;
+    color: #fff;
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0 0 28px;
+  }
+  .login-field {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.5);
+  }
+  .login-field:focus-within { border-bottom-color: rgba(255,255,255,0.9); }
+  .login-field svg {
+    flex-shrink: 0;
+    opacity: 0.85;
+  }
+  .login-field input {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 0;
+    font-size: 1rem;
+    color: #fff;
+    background: transparent;
+    border: none;
+    outline: none;
+  }
+  .login-field input::placeholder { color: rgba(255,255,255,0.65); }
+  .login-password-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 8px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid rgba(255,255,255,0.5);
+  }
+  .login-password-wrap:focus-within { border-bottom-color: rgba(255,255,255,0.9); }
+  .login-password-wrap svg.icon-left { flex-shrink: 0; opacity: 0.85; }
+  .login-password-wrap input {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 0;
+    font-size: 1rem;
+    color: #fff;
+    background: transparent;
+    border: none;
+    outline: none;
+  }
+  .login-password-wrap input::placeholder { color: rgba(255,255,255,0.65); }
+  .login-toggle-pw {
+    flex-shrink: 0;
+    padding: 4px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: rgba(255,255,255,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .login-toggle-pw:hover { color: #fff; }
+  .login-btn {
+    width: 100%;
+    padding: 14px 20px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    background: #fff;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  }
+  .login-btn:hover { background: #f0f0f0; }
+  .login-messages {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 380px;
+    margin-bottom: 12px;
+  }
+  .login-messages .message {
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    background: rgba(0,0,0,0.5);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  .login-messages .message.error { background: rgba(248,81,73,0.4); }
+  .login-messages .message.success { background: rgba(63,185,80,0.4); }
+  .theme-toggle-page {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 10;
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.4);
+    border-radius: 8px;
+    padding: 8px 10px;
+    cursor: pointer;
+    color: #fff;
+    backdrop-filter: blur(8px);
+  }
+  .theme-toggle-page:hover { background: rgba(255,255,255,0.3); }
+</style>
+{% endblock %}
+{% block body %}
+<button type="button" id="theme-toggle-page" class="theme-toggle-page" aria-label="Toggle dark/light mode" title="Dark / Light mode">
+  <span class="theme-icon-dark" style="display:none;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span>
+  <span class="theme-icon-light" style="display:none;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></span>
+</button>
+<div class="login-page">
+  {% if messages %}
+  <div class="login-messages">
+    {% for message in messages %}
+    <div class="message {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  <img src="{% static 'images/logo.png' %}" alt="IMS" class="login-logo">
+  <div class="login-glass">
+    <h1>Login</h1>
+    <form method="post" action="{% url 'accounts:login' %}">
+      {% csrf_token %}
+      <div class="login-field">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <input type="text" id="username" name="username" value="{{ username|default:'' }}" autocomplete="username" autofocus required placeholder="Username">
+      </div>
+      <div class="login-password-wrap">
+        <svg class="icon-left" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <input type="password" id="password" name="password" autocomplete="current-password" required placeholder="Password">
+        <button type="button" class="login-toggle-pw" id="togglePassword" aria-label="Show password">
+          <svg class="icon-eye" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <svg class="icon-eye-off" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+        </button>
+      </div>
+      <button type="submit" class="login-btn">Login</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+  (function() {
+    var toggle = document.getElementById('togglePassword');
+    var input = document.querySelector('.login-password-wrap input');
+    var eye = toggle && toggle.querySelector('.icon-eye');
+    var eyeOff = toggle && toggle.querySelector('.icon-eye-off');
+    if (toggle && input) {
+      toggle.addEventListener('click', function() {
+        var show = input.getAttribute('type') === 'password';
+        input.setAttribute('type', show ? 'text' : 'password');
+        toggle.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+        if (eye) eye.style.display = show ? 'none' : 'block';
+        if (eyeOff) eyeOff.style.display = show ? 'block' : 'none';
+      });
+    }
+  })();
+  (function() {
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('ims-theme', theme);
+      var darkIcon = document.querySelector('#theme-toggle-page .theme-icon-dark');
+      var lightIcon = document.querySelector('#theme-toggle-page .theme-icon-light');
+      if (darkIcon && lightIcon) {
+        darkIcon.style.display = theme === 'light' ? 'block' : 'none';
+        lightIcon.style.display = theme === 'dark' ? 'block' : 'none';
+      }
+    }
+    var btn = document.getElementById('theme-toggle-page');
+    if (btn) {
+      var current = document.documentElement.getAttribute('data-theme') || 'dark';
+      var icon = document.querySelector('#theme-toggle-page .theme-icon-' + (current === 'dark' ? 'light' : 'dark'));
+      if (icon) icon.style.display = 'block';
+      btn.addEventListener('click', function() {
+        var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        applyTheme(next);
+      });
+    }
+  })();
+</script>
+{% endblock %}

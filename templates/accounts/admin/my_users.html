@@ -1,0 +1,42 @@
+{% extends "base_dashboard.html" %}
+{% block title %}My users — Admin — IMS{% endblock %}
+{% block nav %}
+  <a href="{% url 'accounts:admin_dashboard' %}">Dashboard</a>
+  <a href="{% url 'accounts:admin_my_users' %}">My users</a>
+  <a href="{% url 'orders:order_list' %}">Orders</a>
+  <a href="{% url 'orders:admin_progress_submissions' %}">User documents</a>
+  <a href="{% url 'accounts:admin_profile' %}">My profile</a>
+{% endblock %}
+{% block content %}
+<h1 class="page-title">My users</h1>
+<p class="page-desc">Users you created. They can be assigned to orders.</p>
+
+<div class="toolbar" style="margin-bottom:20px;">
+  <a href="{% url 'accounts:admin_user_create' %}" class="btn" style="width:auto;">Create user</a>
+</div>
+
+<div class="table-wrap" style="overflow-x:auto;">
+  <table class="data-table" style="width:100%; border-collapse:collapse;">
+    <thead>
+      <tr style="border-bottom:1px solid var(--border); text-align:left;">
+        <th style="padding:10px 12px;">Wing</th>
+        <th style="padding:10px 12px;">Email</th>
+        <th style="padding:10px 12px;">Last login</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in user_list %}
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:10px 12px;">{{ u.wing|default:"—" }}</td>
+        <td style="padding:10px 12px;">{{ u.email }}</td>
+        <td style="padding:10px 12px; color:var(--text-muted);">
+          {% if u.last_login %}{{ u.last_login|date:"M j, Y H:i" }}{% else %}Never{% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="3" style="padding:24px; color:var(--text-muted);">No users yet. Create a user to assign orders to them.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

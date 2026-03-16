@@ -1,0 +1,68 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Audit log — Superadmin — IMS{% endblock %}
+{% block nav %}
+  <a href="{% url 'accounts:superadmin_dashboard' %}">Dashboard</a>
+  <a href="{% url 'accounts:superadmin_user_list' %}">Users</a>
+  <a href="{% url 'accounts:superadmin_device_list' %}">Devices</a>
+  <a href="{% url 'accounts:superadmin_audit_log' %}">Audit log</a>
+  <a href="{% url 'accounts:superadmin_settings' %}">Settings</a>
+  <a href="{% url 'accounts:superadmin_profile' %}">My profile</a>
+{% endblock %}
+{% block content %}
+<h1 class="page-title">Audit log</h1>
+<p class="page-desc">Time-ordered list of events. Filter and export for compliance.</p>
+
+<div class="toolbar" style="display:flex; flex-wrap:wrap; gap:12px; margin-bottom:20px; align-items:center;">
+  <form method="get" action="{% url 'accounts:superadmin_audit_log' %}" style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+    <input type="text" name="user" value="{{ user_filter }}" placeholder="User" style="width:120px; padding:8px 12px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text);">
+    <select name="role" style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text);">
+      <option value="">All roles</option>
+      {% for value, label in role_choices %}
+      <option value="{{ value }}" {% if role_filter == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <select name="action" style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text);">
+      <option value="">All actions</option>
+      {% for value, label in action_choices %}
+      <option value="{{ value }}" {% if action_filter == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <input type="date" name="date_from" value="{{ date_from }}" placeholder="From" style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text);">
+    <input type="date" name="date_to" value="{{ date_to }}" placeholder="To" style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text);">
+    <button type="submit" class="btn btn-ghost" style="margin:0;">Filter</button>
+  </form>
+  <a href="?{% if query_string_export %}{{ query_string_export }}&{% endif %}format=csv" class="btn btn-ghost" style="margin:0;">Export CSV</a>
+  <a href="?{% if query_string_export %}{{ query_string_export }}&{% endif %}format=xlsx" class="btn btn-ghost" style="margin:0;">Export Excel</a>
+</div>
+
+<div class="table-wrap" style="overflow-x:auto;">
+  <table class="data-table" style="width:100%; border-collapse:collapse;">
+    <thead>
+      <tr style="border-bottom:1px solid var(--border); text-align:left;">
+        <th style="padding:10px 12px;">Time</th>
+        <th style="padding:10px 12px;">User</th>
+        <th style="padding:10px 12px;">Role</th>
+        <th style="padding:10px 12px;">Action</th>
+        <th style="padding:10px 12px;">Details</th>
+        <th style="padding:10px 12px;">IP</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in events %}
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:10px 12px; color:var(--text-muted); white-space:nowrap;">{{ e.timestamp|date:"M j, Y H:i:s" }}</td>
+        <td style="padding:10px 12px;">{{ e.user.username|default:"—" }}</td>
+        <td style="padding:10px 12px;">{{ e.user.get_role_display|default:"—" }}</td>
+        <td style="padding:10px 12px;">{{ e.get_action_display }}</td>
+        <td style="padding:10px 12px; max-width:200px; font-size:0.875rem; color:var(--text-muted);">{{ e.details|truncatechars:50|default:"—" }}</td>
+        <td style="padding:10px 12px; font-size:0.875rem;">{{ e.ip_address|default:"—" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" style="padding:24px; color:var(--text-muted);">No events match the filters.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "includes/pagination.html" with query_string=query_string %}
+<p style="margin-top:12px; font-size:0.875rem; color:var(--text-muted);">Use export for full data (up to 10,000 rows).</p>
+{% endblock %}

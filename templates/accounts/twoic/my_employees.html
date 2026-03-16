@@ -1,0 +1,18 @@
+{% extends "base_dashboard.html" %}
+{% block title %}My employees — 2IC — IMS{% endblock %}
+{% block nav %}
+  <a href="{% url 'accounts:twoic_dashboard' %}">Dashboard</a>
+  <a href="{% url 'accounts:twoic_my_employees' %}">My employees</a>
+  <a href="{% url 'orders_twoic:twoic_order_list' %}">Orders</a>
+  <a href="{% url 'accounts:twoic_profile' %}">My profile</a>
+{% endblock %}
+{% block content %}
+<h1 class="page-title">My employees</h1>
+<p class="page-desc">Employees you created. They log in with their employee number and the password you set.</p>
+
+<div class="toolbar" style="margin-bottom:20px;">
+  <a href="{% url 'accounts:twoic_employee_create' %}" class="btn" style="width:auto;">Create employee</a>
+</div>
+
+<p style="color: var(--text-muted); font-size: 0.875rem;">Create employees and assign them to orders. They log in with their employee number and the password you set.</p>
+{% endblock %}

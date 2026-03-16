@@ -1,0 +1,47 @@
+{% extends "base_dashboard.html" %}
+{% block title %}My submissions — IMS{% endblock %}
+{% block nav %}
+  <a href="{% url 'accounts:user_dashboard' %}">My orders</a>
+  <a href="{% url 'accounts:user_upload_document' %}">Upload document</a>
+  <a href="{% url 'accounts:user_my_documents' %}">My documents</a>
+  <a href="{% url 'accounts:user_profile' %}">My profile</a>
+{% endblock %}
+{% block content %}
+<h1 class="page-title">My submissions</h1>
+<p class="page-desc">History of progress you’ve submitted for orders.</p>
+
+<div class="table-wrap" style="overflow-x:auto;">
+  <table class="data-table" style="width:100%; border-collapse:collapse;">
+    <thead>
+      <tr style="border-bottom:1px solid var(--border); text-align:left;">
+        <th style="padding:10px 12px;">Order</th>
+        <th style="padding:10px 12px;">Submitted</th>
+        <th style="padding:10px 12px;">Notes</th>
+        <th style="padding:10px 12px;">File</th>
+        <th style="padding:10px 12px;">Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in submissions %}
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:10px 12px;">{{ s.assignment.order.title }}</td>
+        <td style="padding:10px 12px; color:var(--text-muted);">{{ s.submitted_at|date:"M j, Y H:i" }}</td>
+        <td style="padding:10px 12px; max-width:200px;">{{ s.notes|truncatewords:15|default:"—" }}</td>
+        <td style="padding:10px 12px;">
+          {% if s.file %}
+          <a href="{{ s.file.url }}" style="color:var(--accent);" target="_blank">{{ s.file_name }}</a>
+          {% else %}
+          —
+          {% endif %}
+        </td>
+        <td style="padding:10px 12px;">
+          <span class="badge badge-success">{{ s.assignment.get_status_display }}</span>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" style="padding:24px; color:var(--text-muted);">You haven’t submitted progress for any order yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

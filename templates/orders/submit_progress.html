@@ -1,0 +1,25 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Submit progress — {{ order.title }} — IMS{% endblock %}
+{% block nav %}
+  <a href="{% url 'accounts:user_dashboard' %}">My orders</a>
+  <a href="{% url 'accounts:user_upload_document' %}">Upload document</a>
+  <a href="{% url 'accounts:user_my_documents' %}">My documents</a>
+  <a href="{% url 'accounts:user_profile' %}">My profile</a>
+{% endblock %}
+{% block content %}
+<h1 class="page-title">Submit progress</h1>
+<p class="page-desc">Order: <strong>{{ order.title }}</strong></p>
+
+<div class="card" style="max-width: 560px; padding: 24px; border: 1px solid var(--border); border-radius: 12px;">
+  <form method="post" action="{% url 'accounts:user_submit_progress' order.pk %}" enctype="multipart/form-data">
+    {% csrf_token %}
+    <label for="notes">Notes</label>
+    <textarea id="notes" name="notes" rows="4" placeholder="Add your progress notes (optional if you upload a file)..." style="width:100%; padding:10px 12px; margin-bottom:16px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text);">{{ notes|default:'' }}</textarea>
+    <label for="progress_file">Progress PDF (optional)</label>
+    <input type="file" id="progress_file" name="progress_file" accept=".pdf,application/pdf" style="width:100%; padding:10px 12px; margin-bottom:20px;">
+    <p class="muted" style="font-size:0.875rem; color:var(--text-muted); margin-top:4px;">Provide at least notes or a PDF.</p>
+    <button type="submit" class="btn" style="width:100%;">Submit progress</button>
+  </form>
+  <p style="margin-top:16px;"><a href="{% url 'accounts:user_dashboard' %}" class="btn-ghost" style="padding:0;">← Back to my orders</a></p>
+</div>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Status — Orders — IMS{% endblock %}
+{% block nav %}
+  <a href="{% url 'accounts:admin_dashboard' %}">Dashboard</a>
+  <a href="{% url 'accounts:admin_my_users' %}">My users</a>
+  <a href="{% url 'orders:order_list' %}">Orders</a>
+  <a href="{% url 'orders:admin_progress_submissions' %}">User documents</a>
+  <a href="{% url 'accounts:admin_profile' %}">My profile</a>
+{% endblock %}
+{% block content %}
+<h1 class="page-title">Status</h1>
+<p class="page-desc">Order "{{ order.title }}" details and status per user.</p>
+
+<div class="card" style="padding: 24px; margin-bottom: 24px; border: 1px solid var(--border); border-radius: 12px;">
+  <p><strong>Description:</strong> {{ order.description|default:"—" }}</p>
+  <p><strong>PDF:</strong> {% if order.pdf_file %}<a href="{{ order.pdf_file.url }}" style="color:var(--accent);" target="_blank">Download PDF</a>{% else %}None{% endif %}</p>
+  <p><strong>Created:</strong> {{ order.created_at|date:"M j, Y H:i" }}</p>
+  <p style="margin-top:16px;">
+    <a href="{% url 'orders:order_delete' order.pk %}" class="btn-ghost" style="color:#f85149;">Delete order</a>
+    <a href="{% url 'orders:order_list' %}" class="btn-ghost" style="margin-left:8px;">← Back to orders</a>
+  </p>
+</div>
+
+<h2 style="font-size:1.125rem; margin-bottom:12px;">Status per user</h2>
+<div class="table-wrap" style="overflow-x:auto;">
+  <table class="data-table" style="width:100%; border-collapse:collapse;">
+    <thead>
+      <tr style="border-bottom:1px solid var(--border); text-align:left;">
+        <th style="padding:10px 12px;">Wing</th>
+        <th style="padding:10px 12px;">Status</th>
+        <th style="padding:10px 12px;">Viewed at</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in assignments %}
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:10px 12px;">{{ a.user.wing|default:a.user.username }}</td>
+        <td style="padding:10px 12px;">
+          <span class="badge {% if a.status == 'completed' %}badge-success{% elif a.status == 'in_progress' %}badge-warning{% elif a.status == 'viewed' or a.status == 'sent' %}badge-info{% else %}badge-muted{% endif %}">
+            {{ a.get_status_display }}
+          </span>
+        </td>
+        <td style="padding:10px 12px; color:var(--text-muted);">
+          {% if a.viewed_at %}{{ a.viewed_at|date:"M j, Y H:i" }}{% else %}—{% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="3" style="padding:24px; color:var(--text-muted);">No assignees.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

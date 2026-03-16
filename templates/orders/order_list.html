@@ -1,0 +1,54 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Orders — Admin — IMS{% endblock %}
+{% block nav %}
+  <a href="{% url 'accounts:admin_dashboard' %}">Dashboard</a>
+  <a href="{% url 'accounts:admin_my_users' %}">My users</a>
+  <a href="{% url 'orders:order_list' %}">Orders</a>
+  <a href="{% url 'orders:admin_progress_submissions' %}">User documents</a>
+  <a href="{% url 'accounts:admin_profile' %}">My profile</a>
+{% endblock %}
+{% block content %}
+<h1 class="page-title">Orders</h1>
+<p class="page-desc">Orders you created. View status per user or delete.</p>
+
+<div class="toolbar" style="margin-bottom:20px;">
+  <a href="{% url 'orders:order_create' %}" class="btn" style="width:auto;">Create order</a>
+</div>
+
+<div class="table-wrap" style="overflow-x:auto;">
+  <table class="data-table" style="width:100%; border-collapse:collapse;">
+    <thead>
+      <tr style="border-bottom:1px solid var(--border); text-align:left;">
+        <th style="padding:10px 12px;">Title</th>
+        <th style="padding:10px 12px;">Assigned to (wing)</th>
+        <th style="padding:10px 12px;">Created</th>
+        <th style="padding:10px 12px;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for order in orders %}
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:10px 12px;">{{ order.title }}</td>
+        <td style="padding:10px 12px;">
+          {% if order.assignments.all %}
+            {% for a in order.assignments.all %}
+              {{ a.user.wing|default:a.user.username }}{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+          {% else %}
+            —
+          {% endif %}
+        </td>
+        <td style="padding:10px 12px; color:var(--text-muted);">{{ order.created_at|date:"M j, Y" }}</td>
+        <td style="padding:10px 12px;">
+          <a href="{% url 'orders:order_detail' order.pk %}" class="btn-ghost" style="padding:4px 8px; font-size:0.875rem;">View</a>
+          <a href="{% url 'orders:order_delete' order.pk %}" class="btn-ghost" style="padding:4px 8px; font-size:0.875rem; color:#f85149;">Delete</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" style="padding:24px; color:var(--text-muted);">No orders yet. Create an order and assign it to your users.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "includes/pagination.html" %}
+{% endblock %}

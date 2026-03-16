@@ -1,0 +1,61 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Add user / Add admin — IMS{% endblock %}
+{% block nav %}
+  <a href="{% url 'accounts:superadmin_dashboard' %}">Dashboard</a>
+  <a href="{% url 'accounts:superadmin_user_list' %}">Users</a>
+  <a href="{% url 'accounts:superadmin_device_list' %}">Devices</a>
+  <a href="{% url 'accounts:superadmin_audit_log' %}">Audit log</a>
+  <a href="{% url 'accounts:superadmin_settings' %}">Settings</a>
+  <a href="{% url 'accounts:superadmin_profile' %}">My profile</a>
+{% endblock %}
+{% block content %}
+<h1 class="page-title">Add user or admin</h1>
+<p class="page-desc">Create an account. They will use this username and password to log in; OTP will be sent to their email.</p>
+
+<div class="card" style="max-width: 420px; padding: 24px; border: 1px solid var(--border); border-radius: 12px;">
+  <form method="post" action="{% url 'accounts:superadmin_user_create' %}">
+    {% csrf_token %}
+    <label for="username">Username *</label>
+    <input type="text" id="username" name="username" value="{{ username|default:'' }}" required style="width:100%; padding:10px 12px; margin-bottom:16px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text);">
+    <label for="email">Email *</label>
+    <input type="email" id="email" name="email" value="{{ email|default:'' }}" required style="width:100%; padding:10px 12px; margin-bottom:16px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text);">
+    <label for="role">Role *</label>
+    <select id="role" name="role" required style="width:100%; padding:10px 12px; margin-bottom:16px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text);">
+      <option value="">—</option>
+      {% for value, label in roles %}
+      <option value="{{ value }}" {% if role == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <label for="password">Initial password *</label>
+    <input type="password" id="password" name="password" required minlength="8" style="width:100%; padding:10px 12px; margin-bottom:16px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text);" placeholder="At least 8 characters">
+    <div id="twoic-only-fields" style="display:none; margin-bottom:16px;">
+      <label for="phone">Phone number</label>
+      <input type="text" id="phone" name="phone" value="{{ phone|default:'' }}" style="width:100%; padding:10px 12px; margin-bottom:16px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text);">
+      <label for="date_of_birth">Date of birth</label>
+      <input type="date" id="date_of_birth" name="date_of_birth" value="{{ date_of_birth|default:'' }}" style="width:100%; padding:10px 12px; margin-bottom:16px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text);">
+    </div>
+    <label for="first_name">First name</label>
+    <input type="text" id="first_name" name="first_name" value="{{ first_name|default:'' }}" style="width:100%; padding:10px 12px; margin-bottom:16px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text);">
+    <label for="last_name">Last name</label>
+    <input type="text" id="last_name" name="last_name" value="{{ last_name|default:'' }}" style="width:100%; padding:10px 12px; margin-bottom:16px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text);">
+    <label for="wing">Wing</label>
+    <input type="text" id="wing" name="wing" value="{{ wing|default:'' }}" placeholder="e.g. North, Finance" style="width:100%; padding:10px 12px; margin-bottom:20px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text);">
+    <button type="submit" class="btn" style="width:100%;">Create account</button>
+  </form>
+  <p style="margin-top:16px;"><a href="{% url 'accounts:superadmin_user_list' %}" class="btn-ghost" style="padding:0;">← Back to users</a></p>
+</div>
+<script>
+  (function() {
+    var roleSelect = document.getElementById('role');
+    var twoicFields = document.getElementById('twoic-only-fields');
+    var twoicValue = 'twoic';
+    function toggleTwoicFields() {
+      twoicFields.style.display = (roleSelect && roleSelect.value === twoicValue) ? 'block' : 'none';
+    }
+    if (roleSelect && twoicFields) {
+      roleSelect.addEventListener('change', toggleTwoicFields);
+      toggleTwoicFields();
+    }
+  })();
+</script>
+{% endblock %}

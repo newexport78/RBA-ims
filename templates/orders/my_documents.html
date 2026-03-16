@@ -1,0 +1,53 @@
+{% extends "base_dashboard.html" %}
+{% block title %}My documents — IMS{% endblock %}
+{% block nav %}
+  <a href="{% url 'accounts:user_dashboard' %}">My orders</a>
+  <a href="{% url 'accounts:user_upload_document' %}">Upload document</a>
+  <a href="{% url 'accounts:user_my_documents' %}">My documents</a>
+  <a href="{% url 'accounts:user_profile' %}">My profile</a>
+{% endblock %}
+{% block content %}
+<h1 class="page-title">My documents</h1>
+<p class="page-desc">Documents you’ve uploaded (independent of orders).</p>
+
+<div style="margin-bottom:20px;">
+  <a href="{% url 'accounts:user_upload_document' %}" class="btn" style="width:auto;">Upload document</a>
+</div>
+
+<div class="table-wrap" style="overflow-x:auto;">
+  <table class="data-table" style="width:100%; border-collapse:collapse;">
+    <thead>
+      <tr style="border-bottom:1px solid var(--border); text-align:left;">
+        <th style="padding:10px 12px;">Title</th>
+        <th style="padding:10px 12px;">Send to</th>
+        <th style="padding:10px 12px;">Uploaded</th>
+        <th style="padding:10px 12px;">Notes</th>
+        <th style="padding:10px 12px;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in documents %}
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:10px 12px;">
+          <a href="{{ d.file.url }}" style="color:var(--accent);" target="_blank">{{ d.file_name }}</a>
+        </td>
+        <td style="padding:10px 12px;">
+          {% if d.recipient_admin %}
+            {{ d.recipient_admin.wing|default:d.recipient_admin.get_full_name|default:d.recipient_admin.username }}
+          {% else %}
+            —
+          {% endif %}
+        </td>
+        <td style="padding:10px 12px; color:var(--text-muted);">{{ d.uploaded_at|date:"M j, Y H:i" }}</td>
+        <td style="padding:10px 12px;">{{ d.notes|truncatewords:15|default:"—" }}</td>
+        <td style="padding:10px 12px;">
+          <a href="{% url 'accounts:user_document_delete' d.pk %}" style="color:#f85149; font-size:0.875rem;">Delete</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" style="padding:24px; color:var(--text-muted);">No documents yet. Upload a PDF above.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

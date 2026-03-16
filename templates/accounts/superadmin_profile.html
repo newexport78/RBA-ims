@@ -1,0 +1,59 @@
+{% extends "base_dashboard.html" %}
+{% block title %}My profile — IMS{% endblock %}
+{% block nav %}
+  <a href="{% url 'accounts:superadmin_dashboard' %}">Dashboard</a>
+  <a href="{% url 'accounts:superadmin_user_list' %}">Users</a>
+  <a href="{% url 'accounts:superadmin_device_list' %}">Devices</a>
+  <a href="{% url 'accounts:superadmin_audit_log' %}">Audit log</a>
+  <a href="{% url 'accounts:superadmin_settings' %}">Settings</a>
+  <a href="{% url 'accounts:superadmin_profile' %}">My profile</a>
+{% endblock %}
+{% block extra_css %}
+<style>
+  .profile-form { max-width: 420px; }
+  .form-group { margin-bottom: 18px; }
+  .form-group label { display: block; font-weight: 600; font-size: 0.875rem; margin-bottom: 6px; color: var(--text); }
+  .form-group input { width: 100%; padding: 10px 12px; font-size: 0.9375rem; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); }
+  .form-group input:focus { outline: none; border-color: var(--accent); }
+  .form-hint { font-size: 0.8125rem; color: var(--text-muted); margin-top: 6px; }
+</style>
+{% endblock %}
+{% block content %}
+<h1 class="page-title">My profile</h1>
+<p class="page-desc">Edit your account details. Changing name, username, email, or password requires your current password.</p>
+
+<form method="post" class="profile-form">
+  {% csrf_token %}
+  <div class="form-group">
+    <label for="first_name">First name</label>
+    <input type="text" id="first_name" name="first_name" value="{{ form_data.first_name }}" autocomplete="given-name">
+  </div>
+  <div class="form-group">
+    <label for="last_name">Last name</label>
+    <input type="text" id="last_name" name="last_name" value="{{ form_data.last_name }}" autocomplete="family-name">
+  </div>
+  <div class="form-group">
+    <label for="username">Username</label>
+    <input type="text" id="username" name="username" value="{{ form_data.username }}" autocomplete="username">
+  </div>
+  <div class="form-group">
+    <label for="email">Email</label>
+    <input type="email" id="email" name="email" value="{{ form_data.email }}" autocomplete="email">
+  </div>
+  <div class="form-group">
+    <label for="password">Current password <span style="color:var(--text-muted); font-weight:400;">(required when changing name, username, email, or password)</span></label>
+    <input type="password" id="password" name="password" autocomplete="current-password" placeholder="Enter to confirm changes">
+    <p class="form-hint">Leave blank only if you are not changing name, username, email, or password.</p>
+  </div>
+  <div class="form-group">
+    <label for="new_password">New password (optional)</label>
+    <input type="password" id="new_password" name="new_password" autocomplete="new-password">
+  </div>
+  <div class="form-group">
+    <label for="confirm_password">Confirm new password</label>
+    <input type="password" id="confirm_password" name="confirm_password" autocomplete="new-password">
+    <p class="form-hint">Enter and confirm to change your password.</p>
+  </div>
+  <button type="submit" class="btn">Save changes</button>
+</form>
+{% endblock %}

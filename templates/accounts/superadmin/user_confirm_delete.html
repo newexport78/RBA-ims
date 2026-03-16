@@ -1,0 +1,24 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Delete user — Superadmin — IMS{% endblock %}
+{% block nav %}
+  <a href="{% url 'accounts:superadmin_dashboard' %}">Dashboard</a>
+  <a href="{% url 'accounts:superadmin_user_list' %}">Users</a>
+  <a href="{% url 'accounts:superadmin_device_list' %}">Devices</a>
+  <a href="{% url 'accounts:superadmin_audit_log' %}">Audit log</a>
+  <a href="{% url 'accounts:superadmin_settings' %}">Settings</a>
+  <a href="{% url 'accounts:superadmin_profile' %}">My profile</a>
+{% endblock %}
+{% block content %}
+<h1 class="page-title">Delete user</h1>
+<p class="page-desc">This will permanently delete the account. This cannot be undone.</p>
+
+<div class="card" style="max-width: 480px; padding: 24px; border: 1px solid var(--border); border-radius: 12px;">
+  <p><strong>{{ target_user.get_full_name|default:target_user.username }}</strong> ({{ target_user.username }})</p>
+  <p style="color: var(--text-muted); margin: 8px 0;">{{ target_user.email }} — {{ target_user.get_role_display }}</p>
+  <form method="post" action="{% url 'accounts:superadmin_user_delete' target_user.pk %}">
+    {% csrf_token %}
+    <button type="submit" class="btn" style="background: #f85149; margin-top: 16px;">Yes, delete user</button>
+    <a href="{% url 'accounts:superadmin_user_list' %}" class="btn-ghost" style="margin-left: 12px;">Cancel</a>
+  </form>
+</div>
+{% endblock %}

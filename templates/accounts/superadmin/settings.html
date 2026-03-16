@@ -1,0 +1,40 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Settings — Superadmin — IMS{% endblock %}
+{% block nav %}
+  <a href="{% url 'accounts:superadmin_dashboard' %}">Dashboard</a>
+  <a href="{% url 'accounts:superadmin_user_list' %}">Users</a>
+  <a href="{% url 'accounts:superadmin_device_list' %}">Devices</a>
+  <a href="{% url 'accounts:superadmin_audit_log' %}">Audit log</a>
+  <a href="{% url 'accounts:superadmin_settings' %}">Settings</a>
+  <a href="{% url 'accounts:superadmin_profile' %}">My profile</a>
+{% endblock %}
+{% block content %}
+<h1 class="page-title">Settings</h1>
+<p class="page-desc">Configure OTP expiry, session timeout, and password rules. Stored in database.</p>
+
+<div class="card" style="max-width: 520px; padding: 24px; border: 1px solid var(--border); border-radius: 12px;">
+  <form method="post" action="{% url 'accounts:superadmin_settings' %}">
+    {% csrf_token %}
+    <label for="otp_expiry_minutes">OTP expiry (minutes)</label>
+    <input type="number" id="otp_expiry_minutes" name="otp_expiry_minutes" min="1" max="60" value="{{ current.otp_expiry_minutes|default:10 }}" style="width:100%; padding:10px 12px; margin-bottom:16px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text);">
+    <label for="session_timeout_seconds">Session timeout (seconds)</label>
+    <input type="number" id="session_timeout_seconds" name="session_timeout_seconds" min="60" max="86400" value="{{ current.session_timeout_seconds|default:3600 }}" style="width:100%; padding:10px 12px; margin-bottom:16px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text);">
+    <label for="password_min_length">Password minimum length</label>
+    <input type="number" id="password_min_length" name="password_min_length" min="6" max="128" value="{{ current.password_min_length|default:8 }}" style="width:100%; padding:10px 12px; margin-bottom:16px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text);">
+    <p style="margin-bottom:8px; font-size:0.875rem; color:var(--text-muted);">Password complexity (require in new passwords)</p>
+    <label style="display:block; margin-bottom:8px;">
+      <input type="checkbox" name="password_require_upper" {% if current.password_require_upper %}checked{% endif %}> Require uppercase letter
+    </label>
+    <label style="display:block; margin-bottom:8px;">
+      <input type="checkbox" name="password_require_lower" {% if current.password_require_lower %}checked{% endif %}> Require lowercase letter
+    </label>
+    <label style="display:block; margin-bottom:8px;">
+      <input type="checkbox" name="password_require_digit" {% if current.password_require_digit %}checked{% endif %}> Require digit
+    </label>
+    <label style="display:block; margin-bottom:16px;">
+      <input type="checkbox" name="password_require_special" {% if current.password_require_special %}checked{% endif %}> Require special character (!@#$%^&* etc.)
+    </label>
+    <button type="submit" class="btn" style="width:100%;">Save settings</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Verify code — IMS{% endblock %}
+{% block extra_css %}
+<style>
+  .login-page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background-color: #7b9acc;
+    background-image: url("{% static 'images/king.png' %}");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    position: relative;
+  }
+  .login-page::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.25);
+    z-index: 0;
+  }
+  .login-logo {
+    position: relative;
+    z-index: 1;
+    margin-bottom: 8px;
+    display: block;
+    max-height: 70px;
+    width: auto;
+    object-fit: contain;
+  }
+  .login-glass {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 380px;
+    padding: 36px 32px 32px;
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  }
+  .login-glass h1 {
+    text-align: center;
+    color: #fff;
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0 0 8px;
+  }
+  .login-glass .subtitle {
+    text-align: center;
+    color: rgba(255,255,255,0.85);
+    font-size: 0.9375rem;
+    margin-bottom: 28px;
+  }
+  .login-field {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.5);
+  }
+  .login-field:focus-within { border-bottom-color: rgba(255,255,255,0.9); }
+  .login-field svg {
+    flex-shrink: 0;
+    opacity: 0.85;
+  }
+  .login-field input {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 0;
+    font-size: 1.25rem;
+    letter-spacing: 0.35em;
+    text-align: center;
+    color: #fff;
+    background: transparent;
+    border: none;
+    outline: none;
+  }
+  .login-field input::placeholder { color: rgba(255,255,255,0.5); }
+  .login-btn {
+    width: 100%;
+    padding: 14px 20px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    background: #fff;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    margin-bottom: 16px;
+  }
+  .login-btn:hover { background: #f0f0f0; }
+  .login-back {
+    display: block;
+    text-align: center;
+    color: rgba(255,255,255,0.8);
+    font-size: 0.875rem;
+    text-decoration: none;
+  }
+  .login-back:hover { color: #fff; }
+  .login-messages {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 380px;
+    margin-bottom: 12px;
+  }
+  .login-messages .message {
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    background: rgba(0,0,0,0.5);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  .login-messages .message.error { background: rgba(248,81,73,0.4); }
+  .login-messages .message.success { background: rgba(63,185,80,0.4); }
+  .theme-toggle-page {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 10;
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.4);
+    border-radius: 8px;
+    padding: 8px 10px;
+    cursor: pointer;
+    color: #fff;
+    backdrop-filter: blur(8px);
+  }
+  .theme-toggle-page:hover { background: rgba(255,255,255,0.3); }
+</style>
+{% endblock %}
+{% block body %}
+<button type="button" id="theme-toggle-page" class="theme-toggle-page" aria-label="Toggle dark/light mode" title="Dark / Light mode">
+  <span class="theme-icon-dark" style="display:none;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span>
+  <span class="theme-icon-light" style="display:none;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></span>
+</button>
+<div class="login-page">
+  {% if messages %}
+  <div class="login-messages">
+    {% for message in messages %}
+    <div class="message {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  <img src="{% static 'images/logo.png' %}" alt="IMS" class="login-logo">
+  <div class="login-glass">
+    <h1>Check your email</h1>
+    <p class="subtitle">We sent a one-time code to {{ email_mask }}. Enter it below.</p>
+    <form method="post" action="{% url 'accounts:otp_verify' %}">
+      {% csrf_token %}
+      <div class="login-field">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <input type="text" id="code" name="code" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="000000" autofocus required>
+      </div>
+      <button type="submit" class="login-btn">Verify and sign in</button>
+    </form>
+    <a href="{% url 'accounts:login' %}" class="login-back">← Back to login</a>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+  (function() {
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('ims-theme', theme);
+      var darkIcon = document.querySelector('#theme-toggle-page .theme-icon-dark');
+      var lightIcon = document.querySelector('#theme-toggle-page .theme-icon-light');
+      if (darkIcon && lightIcon) {
+        darkIcon.style.display = theme === 'light' ? 'block' : 'none';
+        lightIcon.style.display = theme === 'dark' ? 'block' : 'none';
+      }
+    }
+    var btn = document.getElementById('theme-toggle-page');
+    if (btn) {
+      var current = document.documentElement.getAttribute('data-theme') || 'dark';
+      var icon = document.querySelector('#theme-toggle-page .theme-icon-' + (current === 'dark' ? 'light' : 'dark'));
+      if (icon) icon.style.display = 'block';
+      btn.addEventListener('click', function() {
+        var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        applyTheme(next);
+      });
+    }
+  })();
+</script>
+{% endblock %}

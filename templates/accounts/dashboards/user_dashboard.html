@@ -1,0 +1,81 @@
+{% extends "base_dashboard.html" %}
+{% block title %}My orders — IMS{% endblock %}
+{% block nav %}
+  <a href="{% url 'accounts:user_dashboard' %}">My orders</a>
+  <a href="{% url 'accounts:user_upload_document' %}">Upload document</a>
+  <a href="{% url 'accounts:user_my_documents' %}">My documents</a>
+  <a href="{% url 'accounts:user_profile' %}">My profile</a>
+{% endblock %}
+{% block content %}
+<div class="dashboard-hero">
+  <h1 class="page-title">My orders</h1>
+  <p class="page-desc">Orders assigned to you. Welcome back, {{ user.get_full_name|default:user.username }}.</p>
+</div>
+
+<div class="stat-cards">
+  <a href="{% url 'accounts:user_dashboard' %}" class="stat-card">
+    <div class="stat-card-icon orders">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    </div>
+    <div class="stat-label">Total orders</div>
+    <div class="stat-value">{{ total_orders|default:0 }}</div>
+    <span class="stat-link">View list →</span>
+  </a>
+  <a href="{% url 'accounts:user_upload_document' %}" class="stat-card">
+    <div class="stat-card-icon documents">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    </div>
+    <div class="stat-label">Upload document</div>
+    <div class="stat-value">—</div>
+    <span class="stat-link">Upload PDF →</span>
+  </a>
+  <a href="{% url 'accounts:user_my_documents' %}" class="stat-card">
+    <div class="stat-card-icon audit">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+    </div>
+    <div class="stat-label">My documents</div>
+    <div class="stat-value">—</div>
+    <span class="stat-link">View list →</span>
+  </a>
+</div>
+
+<div class="card-block">
+  <div class="card-block-title">Orders assigned to you</div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Date assigned</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in assignments %}
+        <tr>
+          <td>{{ a.order.title }}</td>
+          <td style="color:var(--text-muted);">{{ a.created_at|date:"M j, Y" }}</td>
+          <td>
+            <span class="badge {% if a.status == 'completed' %}badge-success{% elif a.status == 'in_progress' %}badge-warning{% elif a.status == 'viewed' or a.status == 'sent' %}badge-info{% else %}badge-muted{% endif %}">
+              {{ a.get_status_display }}
+            </span>
+          </td>
+          <td>
+            {% if a.order.pdf_file %}
+            <a href="{% url 'accounts:user_order_download_pdf' a.order.pk %}" class="btn-ghost" style="padding:4px 8px; font-size:0.875rem;">Download PDF</a>
+            {% else %}
+            <span style="color:var(--text-muted); font-size:0.875rem;">No PDF</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="4" style="padding: 32px 16px; text-align: center; color: var(--text-muted);">You have no orders assigned yet.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
