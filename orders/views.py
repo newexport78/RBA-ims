@@ -12,6 +12,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_http_methods
 from pypdf import PdfReader, PdfWriter
+from pypdf.errors import PdfReadError, PdfStreamError
 
 PAGE_SIZE = 25
 
@@ -47,7 +48,10 @@ def _employee_pdf_password(user):
 
 def _encrypt_pdf_with_password(source_file, user_password: str):
     """Read PDF from file, encrypt with user_password, return bytes."""
-    reader = PdfReader(source_file)
+    try:
+        reader = PdfReader(source_file)
+    except (PdfReadError, PdfStreamError) as exc:
+        raise Http404('Stored file is not a valid PDF.') from exc
     writer = PdfWriter()
     for page in reader.pages:
         writer.add_page(page)
