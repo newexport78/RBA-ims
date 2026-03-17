@@ -110,6 +110,27 @@ def order_list(request):
     raise Http404()
 
 
+@require_http_methods(['GET', 'POST'])
+@role_required(Role.ADMIN)
+def order_create(request):
+    """(Legacy) Admin order create is disabled; 2ICs use dashboard/twoic/orders/create/."""
+    raise Http404()
+
+
+@require_http_methods(['GET'])
+@role_required(Role.ADMIN)
+def order_detail(request, order_id):
+    """(Legacy) Admin order detail is disabled; 2ICs use dashboard/twoic/orders/."""
+    raise Http404()
+
+
+@require_http_methods(['GET', 'POST'])
+@role_required(Role.ADMIN)
+def order_delete(request, order_id):
+    """(Legacy) Admin order delete is disabled; 2ICs use dashboard/twoic/orders/."""
+    raise Http404()
+
+
 # ---------- 2IC orders (assign to employees only) ----------
 
 
