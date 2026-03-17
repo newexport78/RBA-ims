@@ -66,6 +66,27 @@ def _admin_user_document_queryset(request):
     ).select_related('user')
 
 
+@require_GET
+@role_required(Role.ADMIN)
+def admin_progress_submissions(request):
+    """
+    List progress submissions for this admin's orders/users.
+
+    Shows submissions where either:
+    - the order was created by this admin, or
+    - the submitting user was created by this admin (legacy behaviour).
+    """
+    submissions = (
+        ProgressSubmission.objects.filter(
+            Q(assignment__order__created_by=request.user)
+            | Q(assignment__user__created_by=request.user)
+        )
+        .select_related('assignment', 'assignment__order', 'assignment__user')
+        .order_by('-submitted_at')
+    )
+    return render(request, 'orders/admin_progress_submissions.html', {'submissions': submissions})
+
+
 @require_http_methods(['GET', 'POST'])
 @role_required(Role.ADMIN)
 def admin_user_document_delete(request, document_id):
