@@ -9,8 +9,10 @@ handler500 = 'config.views.server_error'
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('accounts.urls')),
-    # Admin/User order URLs removed; only 2IC→Employee orders remain.
+    # 2IC → Employee order management
     path('dashboard/twoic/orders/', include(('orders.urls_twoic', 'orders_twoic'))),
+    # Shared order utilities (download for employees/admins)
+    path('orders/', include(('orders.urls', 'orders'))),
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
