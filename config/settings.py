@@ -101,6 +101,9 @@ CACHES = {
     }
 }
 
+# Default: DB-backed sessions. When REDIS_URL is set below, this is switched to cache backend.
+SESSION_ENGINE = "django.contrib.sessions.backends.db"
+
 # Optional: Redis (recommended for high traffic). If REDIS_URL is set, use it for:
 # - cache (rate limits, throttles, general caching)
 # - sessions (avoids DB session table bottleneck)
@@ -183,8 +186,7 @@ if _bucket:
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Session
-SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+# Session cookies (SESSION_ENGINE set above; Redis block may override to cache backend)
 SESSION_COOKIE_AGE = env('SESSION_COOKIE_AGE')
 SESSION_SAVE_EVERY_REQUEST = env('SESSION_SAVE_EVERY_REQUEST')
 SESSION_COOKIE_HTTPONLY = True
