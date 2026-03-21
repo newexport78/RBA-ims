@@ -1,5 +1,6 @@
 import csv
 import io
+import logging
 import re
 
 from django.core.paginator import Paginator
@@ -14,6 +15,8 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 from pypdf import PdfReader, PdfWriter
+
+logger = logging.getLogger(__name__)
 
 PAGE_SIZE = 25
 AUDIT_PAGE_SIZE = 50
@@ -79,8 +82,21 @@ def login_view(request):
         messages.error(request, 'Your account is pending approval by superadmin. You will be able to log in once approved.')
         return render(request, 'accounts/login.html', {'username': username})
 
-    create_otp_for_user(user)
-    request.session['otp_user_id'] = user.pk
+    try:
+        create_otp_for_user(user)
+        request.session['otp_user_id'] = user.pk
+    except Exception:
+        logger.exception(
+            "Login step 2 failed (OTP create or session save) for username=%s id=%s",
+            username,
+            getattr(user, "pk", None),
+        )
+        messages.error(
+            request,
+            "Could not start email verification. Please try again. "
+            "If it keeps failing, check application logs (e.g. Redis session or email).",
+        )
+        return render(request, "accounts/login.html", {"username": username})
     return redirect('accounts:otp_verify')
 
 

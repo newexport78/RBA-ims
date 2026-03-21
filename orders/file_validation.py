@@ -37,4 +37,16 @@ def validate_pdf_upload(uploaded_file):
     # Some browsers send application/pdf, others might send octet-stream with .pdf name
     if content_type and content_type not in ALLOWED_PDF_MIME and content_type != 'application/octet-stream':
         return False, 'File must be a PDF (application/pdf).'
+    # Magic-bytes sniff: must start with "%PDF-"
+    try:
+        pos = uploaded_file.tell() if hasattr(uploaded_file, 'tell') else None
+        header = uploaded_file.read(5)
+        if pos is not None:
+            uploaded_file.seek(pos)
+        else:
+            uploaded_file.seek(0)
+    except Exception:
+        header = b''
+    if header and header != b'%PDF-':
+        return False, 'File content does not look like a valid PDF.'
     return True, None

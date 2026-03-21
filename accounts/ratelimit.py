@@ -1,6 +1,7 @@
 """Rate limiting for login (Phase 6). Escalating lockout: 30s → 1m → 30m → 24h → 1 month. User/Admin auto-deleted after 3 failures."""
 import time
 
+from django.conf import settings
 from django.core.cache import cache
 
 # After this many failed attempts, apply lockout (and delete User/Admin account)
@@ -66,6 +67,8 @@ def _get_lock_message(until_key):
 
 def is_login_blocked(request, username=None):
     """Return (blocked: bool, message: str). Message includes remaining time when blocked."""
+    if getattr(settings, 'DISABLE_LOGIN_RATE_LIMIT', False):
+        return False, ''
     ip = _get_ip(request)
     if ip:
         key_lock = CACHE_KEY_IP_LOCK % ip
@@ -126,6 +129,8 @@ def _apply_lockout(ip=None, username=None):
 
 def record_login_failure(request, username=None):
     """Call on each failed login. After 3 failures: escalating lockout (30s → 1m → 30m → 24h → 1 month) and User/Admin account deleted. Returns True if account was deleted."""
+    if getattr(settings, 'DISABLE_LOGIN_RATE_LIMIT', False):
+        return False
     account_deleted = False
     ip = _get_ip(request)
     ip_hit = username_hit = False

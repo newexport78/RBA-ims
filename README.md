@@ -60,7 +60,7 @@ python manage.py runserver
 - Email: `superadmin@example.com`
 - Password: whatever you set (e.g. `SuperAdmin1!`)
 
-OTP in development is printed to the console (no SMTP needed). Set `EMAIL_*` in `.env` for real email.
+OTP in development is printed to the console (`DEBUG=true`). In production on AWS, set **`USE_SES=true`**, **`AWS_SES_REGION_NAME`**, and **`DEFAULT_FROM_EMAIL`** (verified in **Amazon SES** in that region). Grant the ECS **task role** `ses:SendEmail`. **SendGrid** remains optional via `SENDGRID_API_KEY` if you prefer it.
 
 ### URLs
 

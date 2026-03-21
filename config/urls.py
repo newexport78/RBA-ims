@@ -8,6 +8,7 @@ handler500 = 'config.views.server_error'
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('health/', lambda request: __import__('django.http').http.HttpResponse('ok'), name='health'),
     path('', include('accounts.urls')),
     # 2IC → Employee order management
     path('dashboard/twoic/orders/', include(('orders.urls_twoic', 'orders_twoic'))),

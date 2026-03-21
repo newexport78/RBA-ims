@@ -34,7 +34,6 @@ def _employee_pdf_password(user):
     emp = (user.employee_number or user.username or '')[:]
     digits_emp = re.sub(r'\D', '', emp)
     part_emp = digits_emp[-2:] if len(digits_emp) >= 2 else digits_emp.zfill(2)
-
     phone = (user.phone or '')[:]
     digits_phone = re.sub(r'\D', '', phone)
     part_phone = digits_phone[-3:] if len(digits_phone) >= 3 else digits_phone.zfill(3)
@@ -46,12 +45,45 @@ def _employee_pdf_password(user):
     return part_emp + part_phone + part_dob
 
 
+@require_http_methods(['GET', 'POST'])
+@role_required(Role.EMPLOYEE)
+def employee_download_gate(request, order_id):
+    """
+    Employee must enter an access code before downloading the password-protected PDF.
+
+    The access code is the reverse of the PDF open password.
+    """
+    assignment = get_object_or_404(
+        OrderAssignment,
+        order_id=order_id,
+        user=request.user,
+    )
+    order = assignment.order
+    if not order.pdf_file:
+        raise Http404('This order has no PDF.')
+
+    if request.method == 'GET':
+        return render(request, 'orders/employee_pdf_gate.html', {'order': order})
+
+    entered = (request.POST.get('code') or '').strip()
+    expected = _employee_pdf_password(request.user)[::-1]
+    if not entered or entered != expected:
+        messages.error(request, 'Invalid code. Please try again.')
+        return render(request, 'orders/employee_pdf_gate.html', {'order': order})
+
+    # Allow for a short time for this specific order
+    request.session[f'pdf_gate_ok:{order_id}'] = True
+    request.session.set_expiry(300)  # 5 minutes
+    return redirect('orders:download_order_pdf', order_id=order_id)
+
+
 def _encrypt_pdf_with_password(source_file, user_password: str):
     """Read PDF from file, encrypt with user_password, return bytes."""
     try:
         reader = PdfReader(source_file)
-    except (PdfReadError, PdfStreamError) as exc:
-        raise Http404('Stored file is not a valid PDF.') from exc
+    except (PdfReadError, PdfStreamError):
+        # Stored file is not a valid PDF (e.g. a Word/ZIP file renamed as .pdf)
+        raise Http404('This order file is not a valid PDF.')
     writer = PdfWriter()
     for page in reader.pages:
         writer.add_page(page)
@@ -253,6 +285,9 @@ def download_order_pdf(request, order_id):
     filename = os.path.basename(order.pdf_file.name) or 'order.pdf'
 
     if request.user.role == Role.EMPLOYEE:
+        if not request.session.get(f'pdf_gate_ok:{order_id}'):
+            return redirect('orders:employee_download_gate', order_id=order_id)
+        request.session.pop(f'pdf_gate_ok:{order_id}', None)
         password = _employee_pdf_password(request.user)
         with order.pdf_file.open('rb') as fh:
             pdf_bytes = _encrypt_pdf_with_password(fh, password)
