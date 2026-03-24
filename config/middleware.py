@@ -1,4 +1,60 @@
+import json
+import os
+
 from django.conf import settings
+
+
+class CloudflareForwardedProtoMiddleware:
+    """
+    Cloudflare (SSL Flexible) → ALB often forwards HTTP to the task with
+    X-Forwarded-Proto: http. The browser still uses https:// on your domain,
+    so Django thinks the request is insecure and CSRF / cookie handling breaks.
+
+    Cloudflare sends CF-Visitor: {"scheme":"https"}. Normalize proto for Django.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        raw = request.META.get("HTTP_CF_VISITOR")
+        if raw:
+            try:
+                data = json.loads(raw)
+                if isinstance(data, dict) and data.get("scheme") == "https":
+                    request.META = request.META.copy()
+                    request.META["HTTP_X_FORWARDED_PROTO"] = "https"
+            except (json.JSONDecodeError, TypeError, ValueError):
+                pass
+        return self.get_response(request)
+
+
+class AlbHealthCheckHostMiddleware:
+    """
+    AWS ALB default health checks use Host: <target private IP>. Django then
+    returns 400 DisallowedHost before /health/ runs. For /health/ only, set
+    Host to a value in ALLOWED_HOSTS so ECS + target group health checks pass.
+
+    Optional env: HEALTH_CHECK_HOST=rbac-ims.com (otherwise first non-wildcard ALLOWED_HOSTS).
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        path = request.path
+        if path in ('/health', '/health/'):
+            host = os.environ.get('HEALTH_CHECK_HOST', '').strip()
+            if not host:
+                for h in getattr(settings, 'ALLOWED_HOSTS', ()):
+                    hs = (h or '').strip()
+                    if hs and '*' not in hs:
+                        host = hs
+                        break
+            if host:
+                request.META = request.META.copy()
+                request.META['HTTP_HOST'] = host
+        return self.get_response(request)
 
 
 class SecurityHeadersMiddleware:

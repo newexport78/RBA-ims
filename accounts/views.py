@@ -21,12 +21,12 @@ logger = logging.getLogger(__name__)
 PAGE_SIZE = 25
 AUDIT_PAGE_SIZE = 50
 
-from .audit import log_audit_event, record_device
+from .audit import is_new_device_for_employee, log_audit_event, record_device
 from .models import AuditAction, Device, DeviceStatus, AuditEvent, Role
 from .password_validation import validate_password_ims
 from .ratelimit import is_login_blocked, record_login_failure
 from .rbac import get_dashboard_url_for_role, role_required
-from .services import create_otp_for_user, verify_otp
+from .services import create_otp_for_user, notify_new_device_login_employee, verify_otp
 
 User = get_user_model()
 
@@ -140,6 +140,20 @@ def otp_verify_view(request):
         return render(request, 'accounts/otp.html', {'email_mask': _mask_email(user.email)})
 
     request.session.pop('otp_user_id', None)
+
+    if user.role == Role.EMPLOYEE and is_new_device_for_employee(user, request):
+        notify_new_device_login_employee(user, request)
+        log_audit_event(
+            AuditAction.NEW_DEVICE_LOGIN,
+            request=request,
+            user=user,
+            details={'message': 'Employee OTP success from new device fingerprint'},
+        )
+        messages.info(
+            request,
+            'This device is new for your account. A security notice was sent to your email.',
+        )
+
     login(request, user, backend='django.contrib.auth.backends.ModelBackend')
     record_device(user, request)
     log_audit_event('LOGIN_SUCCESS', request=request, user=user)

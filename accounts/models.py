@@ -121,6 +121,7 @@ class Device(models.Model):
 class AuditAction(models.TextChoices):
     LOGIN_SUCCESS = 'LOGIN_SUCCESS', 'Login success'
     LOGIN_FAILED = 'LOGIN_FAILED', 'Login failed'
+    NEW_DEVICE_LOGIN = 'NEW_DEVICE_LOGIN', 'New device login (employee)'
     USER_APPROVED = 'USER_APPROVED', 'User approved (can log in)'
     ORDER_CREATED = 'ORDER_CREATED', 'Order created'
     ORDER_VIEWED = 'ORDER_VIEWED', 'Order viewed'

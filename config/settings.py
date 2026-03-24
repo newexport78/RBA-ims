@@ -36,8 +36,24 @@ environ.Env.read_env(BASE_DIR / '.env')
 SECRET_KEY = env('SECRET_KEY')
 DEBUG = env('DEBUG')
 ALLOWED_HOSTS = env('ALLOWED_HOSTS')
-CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[])
+
+# HTTPS POST (login, forms) fails with "CSRF verification failed" if the Origin is not trusted.
+# Set CSRF_TRUSTED_ORIGINS explicitly, or we derive https:// and http:// entries from ALLOWED_HOSTS.
+_csrf_trusted = [x.strip() for x in env.list('CSRF_TRUSTED_ORIGINS', default=[]) if x and str(x).strip()]
+if _csrf_trusted:
+    CSRF_TRUSTED_ORIGINS = _csrf_trusted
+else:
+    CSRF_TRUSTED_ORIGINS = []
+    for _host in ALLOWED_HOSTS:
+        _h = (_host or '').strip().lower().strip('.')
+        if not _h or '*' in _h:
+            continue
+        CSRF_TRUSTED_ORIGINS.extend((f'https://{_h}', f'http://{_h}'))
+
 DISABLE_LOGIN_RATE_LIMIT = env.bool('DISABLE_LOGIN_RATE_LIMIT', default=False)
+
+# Behind ALB / Cloudflare: use X-Forwarded-Host as Host (disable with USE_X_FORWARDED_HOST=false).
+USE_X_FORWARDED_HOST = env.bool('USE_X_FORWARDED_HOST', default=(not DEBUG))
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -51,6 +67,8 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'config.middleware.AlbHealthCheckHostMiddleware',
+    'config.middleware.CloudflareForwardedProtoMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -169,7 +187,13 @@ _bucket = (env('AWS_STORAGE_BUCKET_NAME') or os.environ.get('AWS_STORAGE_BUCKET_
 if _bucket:
     INSTALLED_APPS += ["storages"]
     AWS_STORAGE_BUCKET_NAME = _bucket
-    AWS_S3_REGION_NAME = env('AWS_S3_REGION_NAME') or os.environ.get('AWS_S3_REGION_NAME') or ''
+    # Avoid invalid endpoint errors like `https://s3..amazon` when the region env is missing/blank.
+    # Your bucket is in `ap-south-1` per AWS S3 console screenshot.
+    AWS_S3_REGION_NAME = (
+        env('AWS_S3_REGION_NAME')
+        or os.environ.get('AWS_S3_REGION_NAME')
+        or 'ap-south-1'
+    ).strip() or 'ap-south-1'
     AWS_S3_CUSTOM_DOMAIN = env('AWS_S3_CUSTOM_DOMAIN') or os.environ.get('AWS_S3_CUSTOM_DOMAIN') or ''
     AWS_S3_OBJECT_PARAMETERS = {"CacheControl": "max-age=86400"}
     AWS_DEFAULT_ACL = None

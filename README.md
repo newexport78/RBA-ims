@@ -60,7 +60,10 @@ python manage.py runserver
 - Email: `superadmin@example.com`
 - Password: whatever you set (e.g. `SuperAdmin1!`)
 
-OTP in development is printed to the console (`DEBUG=true`). In production on AWS, set **`USE_SES=true`**, **`AWS_SES_REGION_NAME`**, and **`DEFAULT_FROM_EMAIL`** (verified in **Amazon SES** in that region). Grant the ECS **task role** `ses:SendEmail`. **SendGrid** remains optional via `SENDGRID_API_KEY` if you prefer it.
+OTP in development is printed to the console (`DEBUG=true`). In production on AWS you can use **Amazon SES** or **SendGrid**:
+
+- **SES:** `USE_SES=true`, `AWS_SES_REGION_NAME`, `DEFAULT_FROM_EMAIL` (verified in SES), ECS task role `ses:SendEmail`. In the SES **sandbox**, recipients must be verified or you must get **production access**.
+- **SendGrid (e.g. while SES is pending):** set **`USE_SES=false`**, **`SENDGRID_API_KEY`**, and **`DEFAULT_FROM_EMAIL`** matching a **verified sender** in SendGrid. See **`DEPLOY-ECS.md` §6**.
 
 ### URLs
 
@@ -86,6 +89,6 @@ Django admin is at `/admin/`. App dashboards are under `/dashboard/` so they don
 - **Phase 6**: Rate limiting, session timeout, password rules, file validation, Settings page.
 - **Phase 7**: Status badges, pagination (users, orders, audit log), custom 404/500, DB indexes.
 
-**Production**: See [DEPLOY.md](DEPLOY.md) for Render, environment variables, and backups.
+**Production**: [DEPLOY-ECS.md](DEPLOY-ECS.md) — AWS ECS + ECR + ALB (immutable tags, `HEALTH_CHECK_HOST`, health checks).
 # RBA-ims
 # RBA-ims

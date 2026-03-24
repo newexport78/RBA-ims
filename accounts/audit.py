@@ -29,6 +29,29 @@ def _device_id(user, ip, user_agent):
     return hashlib.sha256(raw.encode()).hexdigest()[:64]
 
 
+def compute_device_fingerprint(user, request):
+    """Public helper: same fingerprint used by Device rows after login."""
+    ip = get_client_ip(request)
+    ua = get_user_agent(request)
+    return _device_id(user, ip, ua)
+
+
+def is_new_device_for_employee(user, request):
+    """
+    True if user is an employee who has logged in from at least one device before,
+    and the current request does not match any known (non-blocked) device fingerprint.
+    """
+    from .models import Device, DeviceStatus, Role
+
+    if user.role != Role.EMPLOYEE:
+        return False
+    qs = Device.objects.filter(user=user).exclude(status=DeviceStatus.BLOCKED)
+    if not qs.exists():
+        return False
+    fp = compute_device_fingerprint(user, request)
+    return not qs.filter(device_id=fp).exists()
+
+
 def record_device(user, request):
     """After successful login: create or update Device; set first_seen/last_seen."""
     ip = get_client_ip(request)

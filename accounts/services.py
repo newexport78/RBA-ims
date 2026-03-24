@@ -6,7 +6,7 @@ from datetime import timedelta
 from django.conf import settings
 from django.utils import timezone
 
-from .models import OTP, User
+from .models import OTP, Role, User
 from .settings_app import get_setting
 
 logger = logging.getLogger(__name__)
@@ -110,6 +110,54 @@ def send_otp_via_configured_transport(subject: str, message: str, to_email: str)
         "No OTP email transport: set USE_SES=true (Amazon SES) or SENDGRID_API_KEY, "
         "or DEBUG=true for console."
     )
+
+
+def notify_new_device_login_employee(user: User, request) -> None:
+    """
+    Email the employee and all active superadmins when an employee signs in from a
+    fingerprint (IP + browser) not seen before. Does not block login if email fails.
+    """
+    from .audit import get_client_ip, get_user_agent
+
+    ip = get_client_ip(request)
+    ua = get_user_agent(request)
+    when = timezone.now().strftime('%Y-%m-%d %H:%M UTC')
+    user_body = (
+        'A sign-in to your IMS account completed from a device or browser we have not '
+        'seen on this account before.\n\n'
+        f'Time: {when}\n'
+        f'IP address: {ip or "unknown"}\n'
+        f'Device / browser: {(ua[:400] if ua else "unknown")}\n\n'
+        'If this was you, you can ignore this message.\n'
+        'If not, change your password immediately and contact your administrator.\n'
+    )
+    try:
+        send_otp_via_configured_transport(
+            'New sign-in from unrecognized device',
+            user_body,
+            user.email,
+        )
+    except Exception:
+        logger.exception('New-device alert email failed for user id=%s', user.pk)
+
+    label = (user.get_full_name() or '').strip() or user.username
+    for sa in User.objects.filter(role=Role.SUPERADMIN, is_active=True).exclude(email=''):
+        admin_body = (
+            'An employee signed in from a new device or browser (new fingerprint).\n\n'
+            f'User: {user.username} ({label})\n'
+            f'Email: {user.email}\n'
+            f'Time: {when}\n'
+            f'IP: {ip or "unknown"}\n'
+            f'User-Agent: {(ua[:400] if ua else "unknown")}\n'
+        )
+        try:
+            send_otp_via_configured_transport(
+                f'[IMS] New device login: {user.username}',
+                admin_body,
+                sa.email,
+            )
+        except Exception:
+            logger.exception('New-device alert email failed for superadmin id=%s', sa.pk)
 
 
 def send_otp_email(user: User, code: str) -> None:

@@ -1,5 +1,6 @@
 """Order views: Admin creates orders, assigns to users; list/detail/delete. User: download PDF."""
 import io
+import logging
 import os
 import re
 
@@ -24,6 +25,7 @@ from .file_validation import sanitize_filename, validate_pdf_upload
 from .models import Order, OrderAssignment, AssignmentStatus, ProgressSubmission, UserDocument
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 
 def _employee_pdf_password(user):
@@ -232,7 +234,24 @@ def twoic_order_create(request):
                 'my_employees': my_employees, 'title': title, 'description': description,
                 'selected_ids': assignee_ids, 'assign_all': assign_all,
             })
-        order.pdf_file.save(sanitize_filename(pdf_file.name), pdf_file, save=True)
+        try:
+            order.pdf_file.save(sanitize_filename(pdf_file.name), pdf_file, save=True)
+        except Exception:
+            logger.exception(
+                "Order PDF upload failed for order_id=%s twoic_id=%s filename=%s",
+                order.pk,
+                getattr(request.user, "pk", None),
+                getattr(pdf_file, "name", ""),
+            )
+            order.delete()
+            messages.error(
+                request,
+                "PDF upload failed. Please check storage configuration/permissions and try again.",
+            )
+            return render(request, 'orders/twoic_order_form.html', {
+                'my_employees': my_employees, 'title': title, 'description': description,
+                'selected_ids': assignee_ids, 'assign_all': assign_all,
+            })
 
     for uid in assignee_ids:
         OrderAssignment.objects.create(order=order, user_id=uid, status=AssignmentStatus.SENT)
