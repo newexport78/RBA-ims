@@ -52,6 +52,7 @@ else:
 
 DISABLE_LOGIN_RATE_LIMIT = env.bool('DISABLE_LOGIN_RATE_LIMIT', default=False)
 
+
 # Behind ALB / Cloudflare: use X-Forwarded-Host as Host (disable with USE_X_FORWARDED_HOST=false).
 USE_X_FORWARDED_HOST = env.bool('USE_X_FORWARDED_HOST', default=(not DEBUG))
 
