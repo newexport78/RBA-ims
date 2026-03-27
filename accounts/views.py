@@ -163,7 +163,7 @@ def otp_verify_view(request):
             'This device is new for your account. A security notice was sent to your email.',
         )
 
-    login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+    login(request, user, backend='accounts.backends.ApprovedUserBackend')
     record_device(user, request)
     log_audit_event('LOGIN_SUCCESS', request=request, user=user)
     if getattr(user, 'force_password_change', False):

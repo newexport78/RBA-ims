@@ -146,6 +146,7 @@ if _redis_url:
     SESSION_CACHE_ALIAS = "default"
 
 AUTH_USER_MODEL = 'accounts.User'
+AUTHENTICATION_BACKENDS = ['accounts.backends.ApprovedUserBackend']
 LOGIN_URL = 'accounts:login'
 LOGIN_REDIRECT_URL = 'accounts:login_redirect'
 LOGOUT_REDIRECT_URL = 'accounts:login'
