@@ -8,11 +8,40 @@
 {% endblock %}
 {% block content %}
 <h1 class="page-title">My employees</h1>
-<p class="page-desc">Employees you created. They log in with their employee number and the password you set.</p>
+<p class="page-desc">Employees you created. New accounts need <strong>superadmin approval</strong> before they can sign in. After approval, they log in with employee number and the password you set.</p>
 
 <div class="toolbar" style="margin-bottom:20px;">
   <a href="{% url 'accounts:twoic_employee_create' %}" class="btn" style="width:auto;">Create employee</a>
 </div>
 
-<p style="color: var(--text-muted); font-size: 0.875rem;">Create employees and assign them to orders. They log in with their employee number and the password you set.</p>
+<div class="table-wrap" style="overflow-x:auto;">
+  <table class="data-table" style="width:100%; border-collapse:collapse;">
+    <thead>
+      <tr style="border-bottom:1px solid var(--border); text-align:left;">
+        <th style="padding:10px 12px;">Employee #</th>
+        <th style="padding:10px 12px;">Name</th>
+        <th style="padding:10px 12px;">Email</th>
+        <th style="padding:10px 12px;">Approval</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in employee_list %}
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:10px 12px;">{{ e.employee_number|default:e.username }}</td>
+        <td style="padding:10px 12px;">{{ e.get_full_name|default:"—" }}</td>
+        <td style="padding:10px 12px;">{{ e.email }}</td>
+        <td style="padding:10px 12px;">
+          {% if e.is_approved %}
+          <span class="badge badge-success">Approved</span>
+          {% else %}
+          <span class="badge badge-muted">Pending superadmin</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" style="padding:24px; color:var(--text-muted);">No employees yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% endblock %}

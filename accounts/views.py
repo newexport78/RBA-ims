@@ -139,6 +139,15 @@ def otp_verify_view(request):
             messages.error(request, 'Invalid or expired code. Please try again or request a new code.')
         return render(request, 'accounts/otp.html', {'email_mask': _mask_email(user.email)})
 
+    user.refresh_from_db()
+    if user.role != Role.SUPERADMIN and not getattr(user, 'is_approved', True):
+        request.session.pop('otp_user_id', None)
+        messages.error(
+            request,
+            'Your account is pending approval by superadmin. You will be able to log in once approved.',
+        )
+        return redirect('accounts:login')
+
     request.session.pop('otp_user_id', None)
 
     if user.role == Role.EMPLOYEE and is_new_device_for_employee(user, request):
@@ -1033,9 +1042,13 @@ def twoic_employee_create(request):
         is_superuser=False,
         is_active=True,
         created_by=request.user,
-        is_approved=True,  # 2IC-created employees can log in immediately
+        is_approved=False,  # superadmin must approve before employee can log in
     )
-    messages.success(request, f'Employee {user.employee_number} ({user.get_full_name() or user.username}) created. They log in with employee number and the password you set.')
+    messages.success(
+        request,
+        f'Employee {user.employee_number} ({user.get_full_name() or user.username}) created. '
+        'They can log in after a superadmin approves the account under Users.',
+    )
     return redirect('accounts:twoic_my_employees')
 
 
@@ -1256,7 +1269,7 @@ def admin_user_create(request):
 @require_GET
 @role_required(Role.SUPERADMIN)
 def superadmin_user_approve(request, user_id):
-    """Approve a user so they can log in (for admin-created users)."""
+    """Approve a user so they can log in (pending employees, admin-created users, etc.)."""
     target = get_object_or_404(User, pk=user_id)
     if target.is_approved:
         messages.info(request, f'{target.username} is already approved.')

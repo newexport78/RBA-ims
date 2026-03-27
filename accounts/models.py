@@ -43,7 +43,7 @@ class User(AbstractUser):
     )
     is_approved = models.BooleanField(
         default=True,
-        help_text='If False, user cannot log in until a superadmin approves (for admin-created users).',
+        help_text='If False, user cannot log in until a superadmin approves (e.g. 2IC-created employees, admin-created users).',
     )
 
     class Meta:
