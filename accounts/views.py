@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 PAGE_SIZE = 25
 AUDIT_PAGE_SIZE = 50
 
-from .audit import is_new_device_for_alert_roles, log_audit_event, record_device
+from .audit import evaluate_device_login_policy, log_audit_event, record_device
 from .models import AuditAction, Device, DeviceStatus, AuditEvent, Role
 from .password_validation import validate_password_ims
 from .ratelimit import is_login_blocked, record_login_failure
@@ -149,18 +149,34 @@ def otp_verify_view(request):
 
     request.session.pop('otp_user_id', None)
 
-    if is_new_device_for_alert_roles(user, request):
-        notify_new_device_login_alert(user, request)
-        log_audit_event(
-            AuditAction.NEW_DEVICE_LOGIN,
-            request=request,
-            user=user,
-            details={'message': f'{user.get_role_display()} OTP success from new device fingerprint'},
-        )
-        messages.info(
+    decision, _device, is_new_device = evaluate_device_login_policy(user, request)
+    if decision == 'blocked':
+        request.session.pop('otp_user_id', None)
+        messages.error(
             request,
-            'This device is new for your account. A security notice was sent to your email.',
+            'This device is blocked for your account. Contact superadmin.',
         )
+        return redirect('accounts:login')
+
+    if decision == 'pending_approval':
+        request.session.pop('otp_user_id', None)
+        if is_new_device:
+            notify_new_device_login_alert(user, request)
+            log_audit_event(
+                AuditAction.NEW_DEVICE_LOGIN,
+                request=request,
+                user=user,
+                details={'message': f'{user.get_role_display()} login from new device requires superadmin approval'},
+            )
+            messages.info(
+                request,
+                'New device detected. Security alert emails were sent to you and superadmin.',
+            )
+        messages.error(
+            request,
+            'This new device is pending superadmin approval. You can log in after approval.',
+        )
+        return redirect('accounts:login')
 
     login(request, user, backend='accounts.backends.ApprovedUserBackend')
     record_device(user, request)

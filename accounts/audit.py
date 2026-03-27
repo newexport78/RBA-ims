@@ -52,6 +52,55 @@ def is_new_device_for_alert_roles(user, request):
     return not qs.filter(device_id=fp).exists()
 
 
+def evaluate_device_login_policy(user, request):
+    """
+    Decide whether a login from this fingerprint is allowed.
+
+    Returns tuple: (decision, device, is_new_device)
+      - decision: 'allow' | 'pending_approval' | 'blocked'
+      - device: matching/created Device row or None
+      - is_new_device: True only when this call created a brand-new pending device
+    Policy applies to 2IC and Employee only.
+    """
+    from .models import Role
+
+    if user.role not in (Role.TWOIC, Role.EMPLOYEE):
+        return ('allow', None, False)
+
+    ip = get_client_ip(request)
+    ua = get_user_agent(request)
+    fp = _device_id(user, ip, ua)
+    existing = Device.objects.filter(user=user, device_id=fp).first()
+    if existing:
+        if existing.status == DeviceStatus.BLOCKED:
+            return ('blocked', existing, False)
+        if existing.status == DeviceStatus.APPROVED:
+            return ('allow', existing, False)
+        return ('pending_approval', existing, False)
+
+    # First-ever device for the account: auto-approve to avoid lockout on first login.
+    has_any_non_blocked = Device.objects.filter(user=user).exclude(status=DeviceStatus.BLOCKED).exists()
+    if not has_any_non_blocked:
+        device = Device.objects.create(
+            user=user,
+            device_id=fp,
+            user_agent=ua,
+            ip_address=ip,
+            status=DeviceStatus.APPROVED,
+        )
+        return ('allow', device, False)
+
+    # Known account, unknown device: require superadmin approval.
+    device = Device.objects.create(
+        user=user,
+        device_id=fp,
+        user_agent=ua,
+        ip_address=ip,
+        status=DeviceStatus.PENDING,
+    )
+    return ('pending_approval', device, True)
+
+
 def is_new_device_for_employee(user, request):
     """Backward-compatible wrapper for older call sites."""
     return is_new_device_for_alert_roles(user, request)
