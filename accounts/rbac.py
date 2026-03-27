@@ -7,7 +7,20 @@ from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.shortcuts import redirect
 from django.urls import reverse
 
-from .models import Role
+from .models import Role, User
+
+
+def user_may_log_in_per_approval(user) -> bool:
+    """
+    Superadmin always allowed. Everyone else must have is_approved=True in the database.
+
+    Uses a fresh EXISTS query (not the in-memory instance) so login matches the DB row.
+    """
+    if not user or not getattr(user, 'pk', None):
+        return False
+    if getattr(user, 'role', None) == Role.SUPERADMIN:
+        return True
+    return User.objects.filter(pk=user.pk, is_approved=True).exists()
 
 
 def role_required(*allowed_roles: str):

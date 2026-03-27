@@ -25,7 +25,7 @@ from .audit import is_new_device_for_employee, log_audit_event, record_device
 from .models import AuditAction, Device, DeviceStatus, AuditEvent, Role
 from .password_validation import validate_password_ims
 from .ratelimit import is_login_blocked, record_login_failure
-from .rbac import get_dashboard_url_for_role, role_required
+from .rbac import get_dashboard_url_for_role, role_required, user_may_log_in_per_approval
 from .services import create_otp_for_user, notify_new_device_login_employee, verify_otp
 
 User = get_user_model()
@@ -77,8 +77,7 @@ def login_view(request):
             messages.error(request, 'Invalid username or password.')
         return render(request, 'accounts/login.html', {'username': username})
 
-    # Admin-created users must be approved by superadmin before they can log in
-    if user.role != Role.SUPERADMIN and not getattr(user, 'is_approved', True):
+    if not user_may_log_in_per_approval(user):
         messages.error(request, 'Your account is pending approval by superadmin. You will be able to log in once approved.')
         return render(request, 'accounts/login.html', {'username': username})
 
@@ -140,7 +139,7 @@ def otp_verify_view(request):
         return render(request, 'accounts/otp.html', {'email_mask': _mask_email(user.email)})
 
     user.refresh_from_db()
-    if user.role != Role.SUPERADMIN and not getattr(user, 'is_approved', True):
+    if not user_may_log_in_per_approval(user):
         request.session.pop('otp_user_id', None)
         messages.error(
             request,
@@ -1044,6 +1043,9 @@ def twoic_employee_create(request):
         created_by=request.user,
         is_approved=False,  # superadmin must approve before employee can log in
     )
+    # Force DB row: bypasses any edge case where create_user omits the flag in SQL.
+    User.objects.filter(pk=user.pk).update(is_approved=False)
+    user.refresh_from_db(fields=['is_approved'])
     messages.success(
         request,
         f'Employee {user.employee_number} ({user.get_full_name() or user.username}) created. '
@@ -1262,6 +1264,7 @@ def admin_user_create(request):
         created_by=request.user,
         is_approved=False,  # superadmin must approve before user can log in
     )
+    User.objects.filter(pk=user.pk).update(is_approved=False)
     messages.success(request, f'User {user.username} created. They can log in after superadmin approves.')
     return redirect('accounts:admin_my_users')
 
