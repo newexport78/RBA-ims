@@ -36,20 +36,25 @@ def compute_device_fingerprint(user, request):
     return _device_id(user, ip, ua)
 
 
-def is_new_device_for_employee(user, request):
+def is_new_device_for_alert_roles(user, request):
     """
-    True if user is an employee who has logged in from at least one device before,
-    and the current request does not match any known (non-blocked) device fingerprint.
+    True for 2IC/Employee when login fingerprint is new (excluding blocked rows).
+    First-ever login is not treated as "new device" to avoid noisy alerts.
     """
     from .models import Device, DeviceStatus, Role
 
-    if user.role != Role.EMPLOYEE:
+    if user.role not in (Role.TWOIC, Role.EMPLOYEE):
         return False
     qs = Device.objects.filter(user=user).exclude(status=DeviceStatus.BLOCKED)
     if not qs.exists():
         return False
     fp = compute_device_fingerprint(user, request)
     return not qs.filter(device_id=fp).exists()
+
+
+def is_new_device_for_employee(user, request):
+    """Backward-compatible wrapper for older call sites."""
+    return is_new_device_for_alert_roles(user, request)
 
 
 def record_device(user, request):

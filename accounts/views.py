@@ -21,12 +21,12 @@ logger = logging.getLogger(__name__)
 PAGE_SIZE = 25
 AUDIT_PAGE_SIZE = 50
 
-from .audit import is_new_device_for_employee, log_audit_event, record_device
+from .audit import is_new_device_for_alert_roles, log_audit_event, record_device
 from .models import AuditAction, Device, DeviceStatus, AuditEvent, Role
 from .password_validation import validate_password_ims
 from .ratelimit import is_login_blocked, record_login_failure
 from .rbac import get_dashboard_url_for_role, role_required, user_may_log_in_per_approval
-from .services import create_otp_for_user, notify_new_device_login_employee, verify_otp
+from .services import create_otp_for_user, notify_new_device_login_alert, verify_otp
 
 User = get_user_model()
 
@@ -149,13 +149,13 @@ def otp_verify_view(request):
 
     request.session.pop('otp_user_id', None)
 
-    if user.role == Role.EMPLOYEE and is_new_device_for_employee(user, request):
-        notify_new_device_login_employee(user, request)
+    if is_new_device_for_alert_roles(user, request):
+        notify_new_device_login_alert(user, request)
         log_audit_event(
             AuditAction.NEW_DEVICE_LOGIN,
             request=request,
             user=user,
-            details={'message': 'Employee OTP success from new device fingerprint'},
+            details={'message': f'{user.get_role_display()} OTP success from new device fingerprint'},
         )
         messages.info(
             request,
@@ -198,9 +198,14 @@ def superadmin_dashboard(request):
         action=AuditAction.LOGIN_FAILED,
         timestamp__gte=week_ago,
     ).order_by('-timestamp')[:10]
+    recent_new_device_logins = AuditEvent.objects.select_related('user').filter(
+        action=AuditAction.NEW_DEVICE_LOGIN,
+        timestamp__gte=week_ago,
+    ).order_by('-timestamp')[:10]
     return render(request, 'accounts/dashboards/superadmin_dashboard.html', {
         'new_devices_count': new_devices_count,
         'recent_failed_logins': recent_failed_logins,
+        'recent_new_device_logins': recent_new_device_logins,
     })
 
 

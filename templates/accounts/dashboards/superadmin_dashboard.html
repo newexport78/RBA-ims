@@ -77,6 +77,36 @@
 </div>
 {% endif %}
 
+{% if recent_new_device_logins %}
+<div class="card-block">
+  <div class="card-block-title">Recent new-device logins (2IC/Employee)</div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>User</th>
+          <th>Role</th>
+          <th>Details</th>
+          <th>IP</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in recent_new_device_logins %}
+        <tr>
+          <td style="color:var(--text-muted);">{{ e.timestamp|date:"M j, H:i" }}</td>
+          <td>{{ e.user.username|default:"—" }}</td>
+          <td>{% if e.user %}{{ e.user.get_role_display }}{% else %}—{% endif %}</td>
+          <td style="font-size:0.875rem;">{{ e.details|default:"—" }}</td>
+          <td>{{ e.ip_address|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
 <p style="color: var(--text-muted); font-size: 0.875rem;">
   <a href="{% url 'accounts:superadmin_user_list' %}" style="color: var(--accent);">Users</a> — manage accounts, create admins/users, delete, reset passwords.
   <a href="{% url 'accounts:superadmin_device_list' %}" style="color: var(--accent);">Devices</a> — approve or block devices. <a href="{% url 'accounts:superadmin_audit_log' %}" style="color: var(--accent);">Audit log</a> — filter and export. <a href="{% url 'accounts:superadmin_settings' %}" style="color: var(--accent);">Settings</a> — OTP expiry, session timeout, password rules.

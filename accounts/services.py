@@ -112,19 +112,21 @@ def send_otp_via_configured_transport(subject: str, message: str, to_email: str)
     )
 
 
-def notify_new_device_login_employee(user: User, request) -> None:
+def notify_new_device_login_alert(user: User, request) -> None:
     """
-    Email the employee and all active superadmins when an employee signs in from a
-    fingerprint (IP + browser) not seen before. Does not block login if email fails.
+    Email the signed-in 2IC/employee and all active superadmins when login happens
+    from a new fingerprint (IP + browser). Does not block login if email fails.
     """
     from .audit import get_client_ip, get_user_agent
 
     ip = get_client_ip(request)
     ua = get_user_agent(request)
     when = timezone.now().strftime('%Y-%m-%d %H:%M UTC')
+    role_label = user.get_role_display()
     user_body = (
         'A sign-in to your IMS account completed from a device or browser we have not '
         'seen on this account before.\n\n'
+        f'Role: {role_label}\n'
         f'Time: {when}\n'
         f'IP address: {ip or "unknown"}\n'
         f'Device / browser: {(ua[:400] if ua else "unknown")}\n\n'
@@ -143,8 +145,9 @@ def notify_new_device_login_employee(user: User, request) -> None:
     label = (user.get_full_name() or '').strip() or user.username
     for sa in User.objects.filter(role=Role.SUPERADMIN, is_active=True).exclude(email=''):
         admin_body = (
-            'An employee signed in from a new device or browser (new fingerprint).\n\n'
+            'A 2IC/employee signed in from a new device or browser (new fingerprint).\n\n'
             f'User: {user.username} ({label})\n'
+            f'Role: {role_label}\n'
             f'Email: {user.email}\n'
             f'Time: {when}\n'
             f'IP: {ip or "unknown"}\n'
@@ -152,12 +155,17 @@ def notify_new_device_login_employee(user: User, request) -> None:
         )
         try:
             send_otp_via_configured_transport(
-                f'[IMS] New device login: {user.username}',
+                f'[IMS] New device login: {user.username} ({role_label})',
                 admin_body,
                 sa.email,
             )
         except Exception:
             logger.exception('New-device alert email failed for superadmin id=%s', sa.pk)
+
+
+def notify_new_device_login_employee(user: User, request) -> None:
+    """Backward-compatible wrapper for older call sites."""
+    notify_new_device_login_alert(user, request)
 
 
 def send_otp_email(user: User, code: str) -> None:
