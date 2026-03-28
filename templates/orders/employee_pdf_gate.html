@@ -8,10 +8,6 @@
 <div class="card-block">
   <div class="card-block-title">Verify to open PDF</div>
   <div style="padding: 18px 20px;">
-    <p style="margin-top:0; color: var(--text-muted);">
-      Enter the <strong>same access code</strong> you use to open this order PDF (last 2 digits of employee number + last 3 of phone + date of birth as <strong>DDMMYY</strong>). Order: <strong>{{ order.title }}</strong>.
-    </p>
-
     <form method="post" style="max-width: 420px;">
       {% csrf_token %}
       <label style="display:block; font-size:0.875rem; font-weight:600; margin-bottom:6px; color: var(--text-muted);">Access code</label>
