@@ -1,4 +1,5 @@
 """Order views: Admin creates orders, assigns to users; list/detail/delete. User: download PDF."""
+import hmac
 import io
 import logging
 import os
@@ -51,9 +52,8 @@ def _employee_pdf_password(user):
 @role_required(Role.EMPLOYEE)
 def employee_download_gate(request, order_id):
     """
-    Employee must enter an access code before downloading the password-protected PDF.
-
-    The access code is the reverse of the PDF open password.
+    Employee must enter the same combination used as the PDF open password before
+    the PDF can be opened in the browser (session-scoped, one-time use on open).
     """
     assignment = get_object_or_404(
         OrderAssignment,
@@ -68,14 +68,12 @@ def employee_download_gate(request, order_id):
         return render(request, 'orders/employee_pdf_gate.html', {'order': order})
 
     entered = (request.POST.get('code') or '').strip()
-    expected = _employee_pdf_password(request.user)[::-1]
-    if not entered or entered != expected:
-        messages.error(request, 'Invalid code. Please try again.')
+    expected = _employee_pdf_password(request.user)
+    if not entered or not hmac.compare_digest(entered, expected):
+        messages.error(request, 'Invalid code. Use the same combination as your PDF password.')
         return render(request, 'orders/employee_pdf_gate.html', {'order': order})
 
-    # Allow for a short time for this specific order
     request.session[f'pdf_gate_ok:{order_id}'] = True
-    request.session.set_expiry(300)  # 5 minutes
     return redirect('orders:download_order_pdf', order_id=order_id)
 
 
@@ -311,7 +309,7 @@ def download_order_pdf(request, order_id):
         with order.pdf_file.open('rb') as fh:
             pdf_bytes = _encrypt_pdf_with_password(fh, password)
         response = HttpResponse(pdf_bytes, content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        response['Content-Disposition'] = f'inline; filename="{filename}"'
         return response
 
     return FileResponse(

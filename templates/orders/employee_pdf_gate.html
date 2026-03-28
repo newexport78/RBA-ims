@@ -1,21 +1,21 @@
 {% extends "base_dashboard.html" %}
-{% block title %}Download PDF — Verification — IMS{% endblock %}
+{% block title %}Open PDF — Verification — IMS{% endblock %}
 {% block nav %}
   <a href="{% url 'accounts:employee_dashboard' %}">Orders received</a>
   <a href="{% url 'accounts:employee_profile' %}">Profile</a>
 {% endblock %}
 {% block content %}
 <div class="card-block">
-  <div class="card-block-title">Verify to download</div>
+  <div class="card-block-title">Verify to open PDF</div>
   <div style="padding: 18px 20px;">
     <p style="margin-top:0; color: var(--text-muted);">
-      Enter the download code to access this PDF: <strong>{{ order.title }}</strong>.
+      Enter the <strong>same access code</strong> you use to open this order PDF (last 2 digits of employee number + last 3 of phone + date of birth as <strong>DDMMYY</strong>). Order: <strong>{{ order.title }}</strong>.
     </p>
 
     <form method="post" style="max-width: 420px;">
       {% csrf_token %}
-      <label style="display:block; font-size:0.875rem; font-weight:600; margin-bottom:6px; color: var(--text-muted);">Download code</label>
-      <input name="code" type="password" autocomplete="one-time-code"
+      <label style="display:block; font-size:0.875rem; font-weight:600; margin-bottom:6px; color: var(--text-muted);">Access code</label>
+      <input name="code" type="password" autocomplete="off"
              style="width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--border); background:var(--surface); color:var(--text);"
              placeholder="Enter code" />
       <div style="margin-top: 14px; display:flex; gap:10px; align-items:center;">
@@ -25,9 +25,8 @@
     </form>
 
     <p style="margin-top:16px; color: var(--text-muted); font-size:0.875rem;">
-      After this, your PDF reader will still ask for the PDF password.
+      After verification, the PDF opens in your browser; your reader may ask for the same password again to decrypt the file.
     </p>
   </div>
 </div>
 {% endblock %}
-
