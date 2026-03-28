@@ -50,12 +50,26 @@ def _employee_pdf_password(user):
     return part_emp + part_phone + part_dob
 
 
+def _employee_download_gate_code(user):
+    """
+    Web gate only (not the PDF open password): DDMMYY + 1215 + last 2 digits of employee number.
+    If date of birth is missing, the DDMMYY part is empty (same digits as 2IC export suffix pattern).
+    """
+    emp = (user.employee_number or user.username or '')[:]
+    digits_emp = re.sub(r'\D', '', emp)
+    part_emp = digits_emp[-2:] if len(digits_emp) >= 2 else digits_emp.zfill(2)
+    part_dob = ''
+    if user.date_of_birth:
+        part_dob = user.date_of_birth.strftime('%d%m%y')
+    return part_dob + '1215' + part_emp
+
+
 @require_http_methods(['GET', 'POST'])
 @role_required(Role.EMPLOYEE)
 def employee_download_gate(request, order_id):
     """
-    Employee must enter the same combination used as the PDF open password before
-    the PDF can be opened in the browser (session-scoped, one-time use on open).
+    Employee enters the web access code (DDMMYY + 1215 + last 2 of employee number) before
+    the PDF can be opened. The PDF file itself stays encrypted with _employee_pdf_password.
     """
     assignment = get_object_or_404(
         OrderAssignment,
@@ -70,9 +84,9 @@ def employee_download_gate(request, order_id):
         return render(request, 'orders/employee_pdf_gate.html', {'order': order})
 
     entered = (request.POST.get('code') or '').strip()
-    expected = _employee_pdf_password(request.user)
+    expected = _employee_download_gate_code(request.user)
     if not entered or not hmac.compare_digest(entered, expected):
-        messages.error(request, 'Invalid code. Use the same combination as your PDF password.')
+        messages.error(request, 'Invalid access code. Try again.')
         return render(request, 'orders/employee_pdf_gate.html', {'order': order})
 
     request.session[f'pdf_gate_ok:{order_id}'] = True
