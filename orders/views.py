@@ -13,6 +13,8 @@ from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_http_methods
+from reportlab.lib import colors
+from reportlab.pdfgen import canvas
 from pypdf import PdfReader, PdfWriter
 from pypdf.errors import PdfReadError, PdfStreamError
 
@@ -86,6 +88,57 @@ def _encrypt_pdf_with_password(source_file, user_password: str):
         raise Http404('This order file is not a valid PDF.')
     writer = PdfWriter()
     for page in reader.pages:
+        writer.add_page(page)
+    writer.encrypt(user_password=user_password, algorithm="AES-256")
+    buf = io.BytesIO()
+    writer.write(buf)
+    buf.seek(0)
+    return buf.getvalue()
+
+
+def _employee_watermark_label(user):
+    """Text burned into each page for traceability (employee number preferred)."""
+    raw = (user.employee_number or user.username or str(user.pk)).strip()
+    safe = ''.join(c for c in raw if c.isprintable()).strip()
+    return (safe[:64] or str(user.pk))[:64]
+
+
+def _single_page_watermark_reader(page_width: float, page_height: float, text: str) -> PdfReader:
+    """One transparent PDF page with diagonal watermark text, sized to a document page."""
+    packet = io.BytesIO()
+    c = canvas.Canvas(packet, pagesize=(page_width, page_height))
+    c.saveState()
+    c.setFillColor(colors.Color(0.5, 0.5, 0.5, alpha=0.28))
+    font_size = max(14, min(52, min(page_width, page_height) * 0.065))
+    if len(text) > 12:
+        font_size = max(12, min(font_size, min(page_width, page_height) * 0.045))
+    c.setFont('Helvetica-Bold', font_size)
+    c.translate(page_width / 2, page_height / 2)
+    c.rotate(35)
+    c.drawCentredString(0, 0, text)
+    c.restoreState()
+    c.save()
+    packet.seek(0)
+    return PdfReader(packet)
+
+
+def _encrypt_pdf_with_employee_watermark(source_file, user, user_password: str) -> bytes:
+    """Watermark each page with employee number, then AES-encrypt for that employee."""
+    try:
+        reader = PdfReader(source_file)
+    except (PdfReadError, PdfStreamError):
+        raise Http404('This order file is not a valid PDF.')
+    label = _employee_watermark_label(user)
+    writer = PdfWriter()
+    for page in reader.pages:
+        mb = page.mediabox
+        pw = float(mb.right) - float(mb.left)
+        ph = float(mb.top) - float(mb.bottom)
+        if pw < 1 or ph < 1:
+            writer.add_page(page)
+            continue
+        wm_reader = _single_page_watermark_reader(pw, ph, label)
+        page.merge_page(wm_reader.pages[0])
         writer.add_page(page)
     writer.encrypt(user_password=user_password, algorithm="AES-256")
     buf = io.BytesIO()
@@ -284,7 +337,7 @@ def twoic_order_delete(request, order_id):
 @require_GET
 @role_required(Role.USER, Role.EMPLOYEE)
 def download_order_pdf(request, order_id):
-    """User/Employee downloads the order PDF. Only if assigned. Marks as viewed. For employees, PDF is encrypted with password = last 2 of employee id + last 3 of phone + DoB (DDMMYY)."""
+    """User/Employee downloads the order PDF. Only if assigned. Marks as viewed. For employees, each page is watermarked with employee number, then encrypted (PDF password = last 2 of employee id + last 3 of phone + DoB DDMMYY)."""
     assignment = get_object_or_404(
         OrderAssignment,
         order_id=order_id,
@@ -307,7 +360,7 @@ def download_order_pdf(request, order_id):
         request.session.pop(f'pdf_gate_ok:{order_id}', None)
         password = _employee_pdf_password(request.user)
         with order.pdf_file.open('rb') as fh:
-            pdf_bytes = _encrypt_pdf_with_password(fh, password)
+            pdf_bytes = _encrypt_pdf_with_employee_watermark(fh, request.user, password)
         response = HttpResponse(pdf_bytes, content_type='application/pdf')
         response['Content-Disposition'] = f'inline; filename="{filename}"'
         return response
