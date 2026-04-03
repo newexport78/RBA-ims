@@ -23,6 +23,7 @@ PAGE_SIZE = 25
 from accounts.audit import log_audit_event
 from accounts.models import Role
 from accounts.rbac import role_required
+from accounts.ratelimit import clear_gate_ratelimit, is_gate_blocked, record_gate_failure
 
 from .file_validation import sanitize_filename, validate_pdf_upload
 from .models import Order, OrderAssignment, AssignmentStatus, ProgressSubmission, UserDocument
@@ -83,12 +84,19 @@ def employee_download_gate(request, order_id):
     if request.method == 'GET':
         return render(request, 'orders/employee_pdf_gate.html', {'order': order})
 
+    blocked, block_msg = is_gate_blocked(request, request.user, order_id)
+    if blocked:
+        messages.error(request, block_msg or 'Too many invalid access code attempts. Try again later.')
+        return render(request, 'orders/employee_pdf_gate.html', {'order': order})
+
     entered = (request.POST.get('code') or '').strip()
     expected = _employee_download_gate_code(request.user)
     if not entered or not hmac.compare_digest(entered, expected):
+        record_gate_failure(request, request.user, order_id)
         messages.error(request, 'Invalid access code. Try again.')
         return render(request, 'orders/employee_pdf_gate.html', {'order': order})
 
+    clear_gate_ratelimit(request, request.user, order_id)
     request.session[f'pdf_gate_ok:{order_id}'] = True
     return redirect('orders:download_order_pdf', order_id=order_id)
 

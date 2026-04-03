@@ -150,3 +150,141 @@ def record_login_failure(request, username=None):
     if ip_hit or username_hit:
         _apply_lockout(ip=ip if ip_hit else None, username=username if username_hit else None)
     return account_deleted
+
+
+# ---------- Employee PDF gate brute-force protection ----------
+
+# Gate is the "Access code" screen to open an encrypted order PDF in the browser.
+# Protects against repeated guessing of that code (brute force).
+GATE_RATELIMIT_COUNT = 5
+GATE_COUNT_CACHE_TIMEOUT = 900  # 15 minutes
+
+# Lockout keys (ip + per-employee+order)
+CACHE_KEY_GATE_IP_LOCK = 'rl_gate_lock_ip:%s'
+CACHE_KEY_GATE_IP_LOCK_UNTIL = 'rl_gate_lock_until_ip:%s'
+CACHE_KEY_GATE_IP_LEVEL = 'rl_gate_level_ip:%s'
+CACHE_KEY_GATE_IP_COUNT = 'rl_gate_count_ip:%s'
+
+CACHE_KEY_GATE_USER_ORDER_LOCK = 'rl_gate_lock_uo:%s:%s'
+CACHE_KEY_GATE_USER_ORDER_LOCK_UNTIL = 'rl_gate_lock_until_uo:%s:%s'
+CACHE_KEY_GATE_USER_ORDER_LEVEL = 'rl_gate_level_uo:%s:%s'
+CACHE_KEY_GATE_USER_ORDER_COUNT = 'rl_gate_count_uo:%s:%s'
+
+
+def _gate_lock_message(until_key: str) -> str:
+    """Message used for gate lockouts."""
+    until = cache.get(until_key)
+    if until is None:
+        return 'Too many invalid access code attempts. Try again later.'
+    remaining = max(0, int(until - time.time()))
+    return f'Too many invalid access code attempts. Try again in {_format_remaining(remaining)}.'
+
+
+def is_gate_blocked(request, user, order_id):
+    """
+    Return (blocked: bool, message: str) for the employee PDF access-code gate.
+    Locks out on repeated failures per (IP) and per (user+order).
+    """
+    if getattr(settings, 'DISABLE_LOGIN_RATE_LIMIT', False):
+        return False, ''
+
+    ip = _get_ip(request)
+    user_pk = getattr(user, 'pk', None)
+
+    if ip:
+        lock_key = CACHE_KEY_GATE_IP_LOCK % ip
+        if cache.get(lock_key):
+            return True, _gate_lock_message(CACHE_KEY_GATE_IP_LOCK_UNTIL % ip)
+
+    if user_pk is not None:
+        lock_key = CACHE_KEY_GATE_USER_ORDER_LOCK % (user_pk, order_id)
+        if cache.get(lock_key):
+            return True, _gate_lock_message(CACHE_KEY_GATE_USER_ORDER_LOCK_UNTIL % (user_pk, order_id))
+
+    return False, ''
+
+
+def _apply_gate_lockout(ip=None, user_pk=None, order_id=None):
+    """Escalating lockout for gate failures."""
+    if ip:
+        level_key = CACHE_KEY_GATE_IP_LEVEL % ip
+        lock_key = CACHE_KEY_GATE_IP_LOCK % ip
+        until_key = CACHE_KEY_GATE_IP_LOCK_UNTIL % ip
+        level = cache.get(level_key, 0)
+        duration = LOCKOUT_DURATIONS[min(level, len(LOCKOUT_DURATIONS) - 1)]
+        cache.set(lock_key, 1, duration)
+        cache.set(until_key, int(time.time()) + duration, duration + 60)
+        cache.set(level_key, min(level + 1, len(LOCKOUT_DURATIONS) - 1), LEVEL_CACHE_TIMEOUT)
+
+    if user_pk is not None and order_id is not None:
+        level_key = CACHE_KEY_GATE_USER_ORDER_LEVEL % (user_pk, order_id)
+        lock_key = CACHE_KEY_GATE_USER_ORDER_LOCK % (user_pk, order_id)
+        until_key = CACHE_KEY_GATE_USER_ORDER_LOCK_UNTIL % (user_pk, order_id)
+        level = cache.get(level_key, 0)
+        duration = LOCKOUT_DURATIONS[min(level, len(LOCKOUT_DURATIONS) - 1)]
+        cache.set(lock_key, 1, duration)
+        cache.set(until_key, int(time.time()) + duration, duration + 60)
+        cache.set(level_key, min(level + 1, len(LOCKOUT_DURATIONS) - 1), LEVEL_CACHE_TIMEOUT)
+
+
+def record_gate_failure(request, user, order_id):
+    """
+    Call on each failed gate attempt.
+    After GATE_RATELIMIT_COUNT failures, apply escalating lockout.
+    """
+    if getattr(settings, 'DISABLE_LOGIN_RATE_LIMIT', False):
+        return False
+
+    ip = _get_ip(request)
+    user_pk = getattr(user, 'pk', None)
+
+    ip_hit = False
+    user_order_hit = False
+
+    if ip:
+        count_key = CACHE_KEY_GATE_IP_COUNT % ip
+        count = cache.get(count_key, 0) + 1
+        cache.set(count_key, count, GATE_COUNT_CACHE_TIMEOUT)
+        if count >= GATE_RATELIMIT_COUNT:
+            ip_hit = True
+
+    if user_pk is not None:
+        count_key = CACHE_KEY_GATE_USER_ORDER_COUNT % (user_pk, order_id)
+        count = cache.get(count_key, 0) + 1
+        cache.set(count_key, count, GATE_COUNT_CACHE_TIMEOUT)
+        if count >= GATE_RATELIMIT_COUNT:
+            user_order_hit = True
+
+    if ip_hit or user_order_hit:
+        _apply_gate_lockout(
+            ip=ip if ip_hit else None,
+            user_pk=user_pk if user_order_hit else None,
+            order_id=order_id if user_order_hit else None,
+        )
+
+    return ip_hit or user_order_hit
+
+
+def clear_gate_ratelimit(request, user, order_id):
+    """Clear gate failure counters/locks for (user+order) and IP."""
+    ip = _get_ip(request)
+    user_pk = getattr(user, 'pk', None)
+
+    keys = []
+    if ip:
+        keys.extend([
+            CACHE_KEY_GATE_IP_LOCK % ip,
+            CACHE_KEY_GATE_IP_LOCK_UNTIL % ip,
+            CACHE_KEY_GATE_IP_LEVEL % ip,
+            CACHE_KEY_GATE_IP_COUNT % ip,
+        ])
+
+    if user_pk is not None:
+        keys.extend([
+            CACHE_KEY_GATE_USER_ORDER_LOCK % (user_pk, order_id),
+            CACHE_KEY_GATE_USER_ORDER_LOCK_UNTIL % (user_pk, order_id),
+            CACHE_KEY_GATE_USER_ORDER_LEVEL % (user_pk, order_id),
+            CACHE_KEY_GATE_USER_ORDER_COUNT % (user_pk, order_id),
+        ])
+
+    cache.delete_many(keys)
