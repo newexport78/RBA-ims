@@ -979,18 +979,11 @@ def twoic_export_employees_csv(request):
     return response
 
 
-def _twoic_employees_queryset(request):
-    """Employees created by this 2IC."""
-    return User.objects.filter(role=Role.EMPLOYEE, created_by=request.user).order_by('employee_number', 'username')
-
-
 @require_GET
 @role_required(Role.TWOIC)
 def twoic_my_employees(request):
-    """List employees created by this 2IC."""
-    return render(request, 'accounts/twoic/my_employees.html', {
-        'employee_list': _twoic_employees_queryset(request),
-    })
+    """2IC landing for employee onboarding: create only; roster is not shown on this page."""
+    return render(request, 'accounts/twoic/my_employees.html', {})
 
 
 @require_http_methods(['GET', 'POST'])
