@@ -23,7 +23,7 @@ def get_setting(key, default=None, coerce=int):
     # Fallback to Django settings for known keys
     fallback = {
         'otp_expiry_minutes': getattr(django_settings, 'OTP_EXPIRY_MINUTES', 10),
-        'session_timeout_seconds': getattr(django_settings, 'SESSION_COOKIE_AGE', 3600),
+        'session_timeout_seconds': getattr(django_settings, 'SESSION_COOKIE_AGE', 180),
         'password_min_length': 8,
         'password_require_upper': True,
         'password_require_lower': True,

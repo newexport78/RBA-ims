@@ -17,7 +17,8 @@ env = environ.Env(
     AWS_SES_REGION_NAME=(str, ''),
     DEFAULT_FROM_EMAIL=(str, 'noreply@ims.local'),
     OTP_EXPIRY_MINUTES=(int, 10),
-    SESSION_COOKIE_AGE=(int, 3600),
+    # Sliding session lifetime (seconds). With SESSION_SAVE_EVERY_REQUEST, each request resets the timer.
+    SESSION_COOKIE_AGE=(int, 180),  # 3 minutes — override via env SESSION_COOKIE_AGE if needed
     SESSION_SAVE_EVERY_REQUEST=(bool, True),
     REDIS_URL=(str, ''),
     AWS_STORAGE_BUCKET_NAME=(str, ''),
@@ -213,6 +214,7 @@ if _bucket:
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Session cookies (SESSION_ENGINE set above; Redis block may override to cache backend)
+# Idle timeout: SESSION_SAVE_EVERY_REQUEST extends expiry on each request (sliding window).
 SESSION_COOKIE_AGE = env('SESSION_COOKIE_AGE')
 SESSION_SAVE_EVERY_REQUEST = env('SESSION_SAVE_EVERY_REQUEST')
 SESSION_COOKIE_HTTPONLY = True
