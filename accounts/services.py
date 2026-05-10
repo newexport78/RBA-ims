@@ -12,6 +12,30 @@ from .settings_app import get_setting
 logger = logging.getLogger(__name__)
 
 
+def _outbound_sender():
+    """
+    Build From/Sender for SMTP, SES, SendGrid.
+    Returns (rfc5322_from_string, sendgrid_From_object).
+    If DEFAULT_FROM_EMAIL is already 'Name <email>', that wins over EMAIL_SENDER_NAME.
+    """
+    from sendgrid.helpers.mail import From
+
+    raw = (getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@ims.local") or "").strip()
+    extra = (getattr(settings, "EMAIL_SENDER_NAME", "") or "").strip()
+
+    if '<' in raw and '>' in raw:
+        left, rest = raw.split('<', 1)
+        em = rest.split('>', 1)[0].strip()
+        nm = left.strip().strip('"').strip("'")
+        if em:
+            hdr = f'{nm} <{em}>' if nm else em
+            return hdr, From(em, nm) if nm else From(em)
+
+    if extra:
+        return f'{extra} <{raw}>', From(raw, extra)
+    return raw, From(raw)
+
+
 def create_otp_for_user(user: User) -> OTP:
     """Create a new OTP for user, invalidate any existing unused OTPs, send email."""
     OTP.objects.filter(user=user, used_at__isnull=True).update(used_at=timezone.now())
@@ -26,10 +50,11 @@ def create_otp_for_user(user: User) -> OTP:
 def _send_email_via_console(subject: str, message: str, to_email: str) -> None:
     from django.core.mail import send_mail
 
+    src, _ = _outbound_sender()
     send_mail(
         subject,
         message,
-        getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@ims.local"),
+        src,
         [to_email],
     )
 
@@ -40,7 +65,7 @@ def _send_email_via_ses(subject: str, message: str, to_email: str) -> None:
 
     region = getattr(settings, "AWS_SES_REGION_NAME", "ap-south-1")
     client = boto3.client("ses", region_name=region)
-    src = getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@ims.local")
+    src, _ = _outbound_sender()
     try:
         client.send_email(
             Source=src,
@@ -70,8 +95,9 @@ def _send_email_via_sendgrid(subject: str, message: str, to_email: str) -> None:
     if not api_key:
         raise RuntimeError("SENDGRID_API_KEY is not configured")
 
+    _, sg_from = _outbound_sender()
     email = Mail(
-        from_email=getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@ims.local"),
+        from_email=sg_from,
         to_emails=to_email,
         subject=subject,
         plain_text_content=message,

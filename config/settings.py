@@ -16,6 +16,8 @@ env = environ.Env(
     USE_SES=(bool, False),
     AWS_SES_REGION_NAME=(str, ''),
     DEFAULT_FROM_EMAIL=(str, 'noreply@ims.local'),
+    # Shown as sender name in inbox (e.g. "RBAC-IMS <noreply@...>")
+    EMAIL_SENDER_NAME=(str, 'RBAC-IMS'),
     OTP_EXPIRY_MINUTES=(int, 10),
     # Sliding session lifetime (seconds). With SESSION_SAVE_EVERY_REQUEST, each request resets the timer.
     SESSION_COOKIE_AGE=(int, 180),  # 3 minutes — override via env SESSION_COOKIE_AGE if needed
@@ -246,6 +248,7 @@ USE_SES = env.bool('USE_SES', default=False)
 _s3_region = (env('AWS_S3_REGION_NAME') or '').strip()
 AWS_SES_REGION_NAME = (env('AWS_SES_REGION_NAME') or '').strip() or _s3_region or 'ap-south-1'
 DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL')
+EMAIL_SENDER_NAME = env('EMAIL_SENDER_NAME')
 
 # Local development: print emails (OTP) to console (no SES/SendGrid)
 if DEBUG:
