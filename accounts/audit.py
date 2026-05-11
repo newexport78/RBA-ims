@@ -38,12 +38,12 @@ def compute_device_fingerprint(user, request):
 
 def is_new_device_for_alert_roles(user, request):
     """
-    True for 2IC/Employee when login fingerprint is new (excluding blocked rows).
+    True for 2IC / Employee / Superadmin when login fingerprint is new (excluding blocked rows).
     First-ever login is not treated as "new device" to avoid noisy alerts.
     """
     from .models import Device, DeviceStatus, Role
 
-    if user.role not in (Role.TWOIC, Role.EMPLOYEE):
+    if user.role not in (Role.TWOIC, Role.EMPLOYEE, Role.SUPERADMIN):
         return False
     qs = Device.objects.filter(user=user).exclude(status=DeviceStatus.BLOCKED)
     if not qs.exists():
@@ -60,11 +60,11 @@ def evaluate_device_login_policy(user, request):
       - decision: 'allow' | 'pending_approval' | 'blocked'
       - device: matching/created Device row or None
       - is_new_device: True only when this call created a brand-new pending device
-    Policy applies to 2IC and Employee only.
+    Policy applies to 2IC, Employee, and Superadmin (same rules). Other roles: always allow.
     """
     from .models import Role
 
-    if user.role not in (Role.TWOIC, Role.EMPLOYEE):
+    if user.role not in (Role.TWOIC, Role.EMPLOYEE, Role.SUPERADMIN):
         return ('allow', None, False)
 
     ip = get_client_ip(request)

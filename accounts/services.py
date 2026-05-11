@@ -140,7 +140,7 @@ def send_otp_via_configured_transport(subject: str, message: str, to_email: str)
 
 def notify_new_device_login_alert(user: User, request) -> None:
     """
-    Email the signed-in 2IC/employee and all active superadmins when login happens
+    Email the signed-in user and other active superadmins when login happens
     from a new fingerprint (IP + browser). Does not block login if email fails.
     """
     from .audit import get_client_ip, get_user_agent
@@ -169,9 +169,15 @@ def notify_new_device_login_alert(user: User, request) -> None:
         logger.exception('New-device alert email failed for user id=%s', user.pk)
 
     label = (user.get_full_name() or '').strip() or user.username
-    for sa in User.objects.filter(role=Role.SUPERADMIN, is_active=True).exclude(email=''):
+    # Do not email the same superadmin twice (they already got user_body above).
+    other_superadmins = (
+        User.objects.filter(role=Role.SUPERADMIN, is_active=True)
+        .exclude(email='')
+        .exclude(pk=user.pk)
+    )
+    for sa in other_superadmins:
         admin_body = (
-            'A 2IC/employee signed in from a new device or browser (new fingerprint).\n\n'
+            'A user signed in from a new device or browser (new fingerprint) and needs device approval.\n\n'
             f'User: {user.username} ({label})\n'
             f'Role: {role_label}\n'
             f'Email: {user.email}\n'
