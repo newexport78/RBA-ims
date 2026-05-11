@@ -37,7 +37,31 @@
       --card-shadow: 0 4px 20px rgba(0,0,0,0.08);
     }
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    body { margin: 0; font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; position: relative; }
+    /* Large faint crest behind content (superadmin / 2IC / employee only) — RBA-style watermark */
+    .dashboard-watermark {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .dashboard-watermark img {
+      height: min(58vh, 620px);
+      width: auto;
+      max-width: min(88vw, 720px);
+      object-fit: contain;
+      object-position: center;
+      opacity: 0.08;
+      user-select: none;
+    }
+    [data-theme="light"] .dashboard-watermark img {
+      opacity: 0.045;
+    }
+    .header, .main { position: relative; z-index: 1; }
     .header {
       background: var(--surface);
       border-bottom: 1px solid var(--border);
@@ -117,6 +141,13 @@
   {% block extra_css %}{% endblock %}
 </head>
 <body>
+  {% if user.is_authenticated %}
+    {% if user.role == 'superadmin' or user.role == 'twoic' or user.role == 'employee' %}
+  <div class="dashboard-watermark" aria-hidden="true">
+    <img src="{% static 'images/logo.png' %}" alt="" decoding="async" fetchpriority="low">
+  </div>
+    {% endif %}
+  {% endif %}
   <header class="header">
     <div class="header-left">
       <img src="{% static 'images/logo.png' %}" alt="IMS" class="app-logo">
