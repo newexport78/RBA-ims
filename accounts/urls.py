@@ -31,4 +31,18 @@ urlpatterns = [
     path('dashboard/twoic/export-employees-csv/', views.twoic_export_employees_csv, name='twoic_export_employees_csv'),
     path('dashboard/employee/', views.employee_dashboard, name='employee_dashboard'),
     path('dashboard/employee/profile/', views.employee_profile, name='employee_profile'),
+    # Admin (role Admin)
+    path('dashboard/admin/', views.admin_dashboard, name='admin_dashboard'),
+    path('dashboard/admin/profile/', views.admin_profile, name='admin_profile'),
+    path('dashboard/admin/users/', views.admin_my_users, name='admin_my_users'),
+    path('dashboard/admin/users/create/', views.admin_user_create, name='admin_user_create'),
+    # Member / User (role User)
+    path('dashboard/user/', views.user_dashboard, name='user_dashboard'),
+    path('dashboard/user/profile/', views.user_profile, name='user_profile'),
+    path('dashboard/user/upload-document/', upload_document, name='user_upload_document'),
+    path('dashboard/user/documents/', my_documents, name='user_my_documents'),
+    path('dashboard/user/documents/<int:document_id>/delete/', user_document_delete, name='user_document_delete'),
+    path('dashboard/user/submissions/', my_submissions, name='user_my_submissions'),
+    path('dashboard/user/order/<int:order_id>/download/', download_order_pdf, name='user_order_download_pdf'),
+    path('dashboard/user/order/<int:order_id>/submit-progress/', submit_progress, name='user_submit_progress'),
 ]

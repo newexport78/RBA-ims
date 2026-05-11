@@ -52,5 +52,8 @@ def get_dashboard_url_for_role(role: str) -> str:
         return reverse('accounts:twoic_dashboard')
     if role == Role.EMPLOYEE:
         return reverse('accounts:employee_dashboard')
-    # Fallback: send any unexpected roles to login.
+    if role == Role.ADMIN:
+        return reverse('accounts:admin_dashboard')
+    if role == Role.USER:
+        return reverse('accounts:user_dashboard')
     return reverse('accounts:login')

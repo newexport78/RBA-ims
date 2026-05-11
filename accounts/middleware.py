@@ -1,6 +1,7 @@
 """
 Redirect authenticated users away from login/OTP; apply configurable session timeout (Phase 6).
 """
+from django.conf import settings as django_settings
 from django.shortcuts import redirect
 from django.urls import reverse
 
@@ -15,7 +16,10 @@ class SessionTimeoutMiddleware:
 
     def __call__(self, request):
         if getattr(request, 'session', None) and request.session.session_key:
-            seconds = get_setting('session_timeout_seconds', 3600)
+            seconds = get_setting(
+                'session_timeout_seconds',
+                getattr(django_settings, 'SESSION_COOKIE_AGE', 180),
+            )
             request.session.set_expiry(seconds)
         return self.get_response(request)
 
