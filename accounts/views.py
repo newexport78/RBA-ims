@@ -1036,10 +1036,18 @@ def twoic_employee_create(request):
     date_of_birth = None
     if dob_str:
         try:
-            date_of_birth = datetime.strptime(dob_str, '%Y-%m-%d').date()
+            date_of_birth = datetime.strptime(dob_str, '%d-%m-%Y').date()
         except ValueError:
-            messages.error(request, 'Invalid date of birth. Use YYYY-MM-DD.')
-            return render(request, 'accounts/twoic/employee_form.html', form_ctx)
+            try:
+                # Backward-compatible fallback for previous form versions.
+                date_of_birth = datetime.strptime(dob_str, '%d/%m/%Y').date()
+            except ValueError:
+                try:
+                    # Fallback if browser sends ISO date.
+                    date_of_birth = datetime.strptime(dob_str, '%Y-%m-%d').date()
+                except ValueError:
+                    messages.error(request, 'Invalid date of birth. Use DD-MM-YYYY.')
+                    return render(request, 'accounts/twoic/employee_form.html', form_ctx)
 
     user = User.objects.create_user(
         username=employee_number,

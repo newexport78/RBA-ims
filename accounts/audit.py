@@ -23,9 +23,21 @@ def get_user_agent(request):
     return ua[:512]
 
 
+def _normalize_ip_for_fingerprint(ip):
+    """Strip IPv4-mapped IPv6 prefix so the same client is not hashed two ways (::ffff:x vs x)."""
+    if not ip:
+        return ''
+    s = str(ip).strip()
+    lower = s.lower()
+    if lower.startswith('::ffff:'):
+        return s[7:]
+    return s
+
+
 def _device_id(user, ip, user_agent):
     """Stable id for same user + IP + UA combo."""
-    raw = f'{user.pk}|{ip or ""}|{user_agent[:200]}'
+    nip = _normalize_ip_for_fingerprint(ip)
+    raw = f'{user.pk}|{nip}|{user_agent[:200]}'
     return hashlib.sha256(raw.encode()).hexdigest()[:64]
 
 
